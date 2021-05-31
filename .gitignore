@@ -1,6 +1,6 @@
 #folders
-./_build/*
-./.vscode/*
+_build/
+.vscode/
 
 
 #specific files

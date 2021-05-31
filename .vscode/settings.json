@@ -1,7 +1,0 @@
-{
-    "files.associations": {
-        "*.bin": "cpp",
-        "xlocale": "cpp",
-        "xstring": "cpp"
-    }
-}
