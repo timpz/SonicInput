@@ -104,7 +104,8 @@ struct app_button_state
 	bool32 IsDown;
 };
 
-struct keyboard_input
+
+struct game_input
 {
 	union
 	{
@@ -114,18 +115,25 @@ struct keyboard_input
 			app_button_state ExitApp;
 
 			app_button_state Enter;
-			app_button_state W;
-			app_button_state A;
-			app_button_state S;
-			app_button_state D;
+			app_button_state MoveUp;
+			app_button_state MoveDown;
+			app_button_state MoveLeft;
+			app_button_state MoveRight;
 
-			app_button_state L;
-			app_button_state K;
-			app_button_state J;
+			app_button_state ActionA;
+			app_button_state ActionB;
+			app_button_state ActionC;
 			
 		};
 	};
 	
+};
+
+struct input
+{
+
+	game_input Device[3];
+
 };
 
 struct display_input

@@ -2,6 +2,7 @@
 
 #include <windows.h>
 #include <iostream>
+#include <dinput.h>
 #include "app.h"
 
 struct win32_window_dimension

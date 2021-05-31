@@ -9,7 +9,8 @@ global bool32 GlobalRunning;
 #include "app.cpp"
 
 local_persist win32_offscreen_buffer *Win32BackBuffer;
-local_persist keyboard_input Win32Keyboard[2];
+// local_persist game_input Win32Keyboard[2];
+local_persist GUID GlobalControllerGUID;
 
 DEBUG_PLATFORM_FREE_FILE_MEMORY(DEBUGPlatformFreeFileMemory)
 {
@@ -311,7 +312,7 @@ inline void Win32ProcessKeyboardMessage(app_button_state *NewState, bool32 IsDow
 		NewState->IsDown = IsDown;
 }
 
-internal void Win32ProcessPendingMessages(keyboard_input *Keyboard)
+internal void Win32ProcessPendingMessages(game_input *Keyboard)
 {
 	MSG Message;
 	while(PeekMessage(&Message, 0, 0, 0, PM_REMOVE))
@@ -335,37 +336,37 @@ internal void Win32ProcessPendingMessages(keyboard_input *Keyboard)
 				{
 					if(VKCode == 'W')
 					{
-						Win32ProcessKeyboardMessage(&Keyboard->W, IsDown);
+						Win32ProcessKeyboardMessage(&Keyboard->MoveUp, IsDown);
 					}
 
 					if(VKCode == 'A')
 					{
-						Win32ProcessKeyboardMessage(&Keyboard->A, IsDown);
+						Win32ProcessKeyboardMessage(&Keyboard->MoveLeft, IsDown);
 					}
 
 					if(VKCode == 'S')
 					{
-						Win32ProcessKeyboardMessage(&Keyboard->S, IsDown);
+						Win32ProcessKeyboardMessage(&Keyboard->MoveDown, IsDown);
 					}
 
 					if(VKCode == 'D')
 					{
-						Win32ProcessKeyboardMessage(&Keyboard->D, IsDown);
+						Win32ProcessKeyboardMessage(&Keyboard->MoveRight, IsDown);
 					}
 
 					if(VKCode == 'J')
 					{
-						Win32ProcessKeyboardMessage(&Keyboard->J, IsDown);
+						Win32ProcessKeyboardMessage(&Keyboard->ActionA, IsDown);
 					}
 
 					if(VKCode == 'K')
 					{
-						Win32ProcessKeyboardMessage(&Keyboard->K, IsDown);
+						Win32ProcessKeyboardMessage(&Keyboard->ActionB, IsDown);
 					}
 
 					if(VKCode == 'L')
 					{
-						Win32ProcessKeyboardMessage(&Keyboard->L, IsDown);
+						Win32ProcessKeyboardMessage(&Keyboard->ActionC, IsDown);
 					}
 
 					if(VKCode == VK_RETURN)
@@ -479,6 +480,27 @@ inline float64 QPCElapsedInMS(int64 Start, int64 End, int64 Frequency)
 	return MilliSecondsElapsed;
 }
 
+
+internal BOOL DirectInputEnumCallback(LPCDIDEVICEINSTANCE DirectInputPointer, LPVOID PointerValue)
+{
+	bool32 *Switcher = (bool32 *)PointerValue;
+	if(*Switcher == false)
+	{
+		GlobalControllerGUID = DirectInputPointer->guidInstance;
+		// GlobalDIControllerName = DirectInputPointer->tszInstanceName;
+		*Switcher = true;
+	}
+	return true;
+}
+
+inline game_input *GetController(input *Input, int DeviceIndex)
+{
+	Assert(ControllerIndex < ArrayCount(Input->Controllers));
+
+	game_controller_input *Result = &Input->Controllers[ControllerIndex];
+	return(Result);
+}
+
 int32 CALLBACK WinMain
 (
 	HINSTANCE Instance,
@@ -555,11 +577,39 @@ int32 CALLBACK WinMain
 			AppBuffer.Pitch = Win32BackBuffer->Pitch;
 			AppBuffer.Memory = Win32BackBuffer->Memory;
 
-			Win32Keyboard[0] = {};
-			Win32Keyboard[1] = {};
+			input DeviceInput = {};
+			// 0 is keyboard
+			// 1 is DInput
+			// 2 will be XInput eventually
 
-			keyboard_input *NewKeyboard = &Win32Keyboard[0];
-			keyboard_input *OldKeyboard = &Win32Keyboard[1];
+			game_input Win32Keyboard[2] = {};
+			game_input *NewKeyboard = &Win32Keyboard[0];
+			game_input *OldKeyboard = &Win32Keyboard[1];
+
+			game_input DInput[2] = {};
+			game_input *NewDInput = &DInput[0];
+			game_input *OldDInput = &DInput[1];
+
+			DeviceInput.Device[0] = Win32Keyboard[0];
+			DeviceInput.Device[1] = DInput[0];
+
+
+			LPDIRECTINPUT8 DInputPointer = 0;
+			LPDIRECTINPUTDEVICE8A DInputController = 0;
+
+			if(DirectInput8Create(Instance, DIRECTINPUT_VERSION, IID_IDirectInput8A, (void**)&DInputPointer, NULL) == DI_OK)
+			{
+
+				bool32 EnumValue = 0;
+				DInputPointer->EnumDevices(DI8DEVCLASS_GAMECTRL, DirectInputEnumCallback, (LPVOID)&EnumValue, DIEDFL_ATTACHEDONLY);
+
+				DInputPointer->CreateDevice(GlobalControllerGUID, &DInputController, NULL);
+				if(DInputController != 0)
+				{
+					DInputController->SetDataFormat(&c_dfDIJoystick);
+					DInputController->Acquire();
+				}
+			}
 
 		
 #if BUILD_INTERNAL
@@ -598,6 +648,73 @@ int32 CALLBACK WinMain
 			{
 				Win32ProcessPendingMessages(NewKeyboard);
 
+
+
+
+
+
+
+
+#if 1
+					DIJOYSTATE DIState = {};
+
+					if(DInputController != 0)
+					{
+						DInputController->GetDeviceState(sizeof(DIJOYSTATE), (LPVOID)&DIState);
+
+
+						game_input *NewDIController = GetController(NewInput, 2);
+						game_input *OldDIController = GetController(OldInput, 2);
+						game_input ZeroDIController = {};
+						*NewDIController = ZeroDIController;
+
+						uint32 DIPOV = DIState.rgdwPOV[0]/4500;
+
+						NewDIController->AverageX = 0.0f;
+						if(DIPOV > 0 && DIPOV <= 3)
+						{
+							NewDIController->AverageX = 1.0f;
+						}
+						else if(DIPOV > 4 && DIPOV <= 7)
+						{
+							NewDIController->AverageX = -1.0f;
+						}
+
+						NewDIController->AverageY = 0.0f;
+						if((DIPOV < 2 || DIPOV > 6) && DIPOV < 8)
+						{
+							NewDIController->AverageY = 1.0f;
+						}
+						else if(DIPOV > 2 && DIPOV <= 5)
+						{
+							NewDIController->AverageY = -1.0f;
+						}
+
+						NewDIController->ActionLeft.EndedDown = (bool32)DIState.rgbButtons[1];
+						NewDIController->ActionDown.EndedDown = (bool32)DIState.rgbButtons[2];
+						NewDIController->ActionRight.EndedDown = (bool32)DIState.rgbButtons[3];
+
+						NewDIController->Start.EndedDown = (bool32)DIState.rgbButtons[9];
+
+
+					}
+#endif
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 				Update(NewKeyboard, &AppMemory);
 				Render(&AppBuffer, &AppMemory);
 
@@ -607,7 +724,7 @@ int32 CALLBACK WinMain
 					WINDOW_WIDTH, WINDOW_HEIGHT
 				);
 
-				keyboard_input *TempKeyboardPointer = NewKeyboard;
+				game_input *TempKeyboardPointer = NewKeyboard;
 				NewKeyboard = OldKeyboard;
 				OldKeyboard = TempKeyboardPointer;
 

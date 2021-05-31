@@ -3,7 +3,7 @@
 
 local_persist bool32 TestButton = false;
 
-internal void ProcessInput(keyboard_input *KeyboardInput, app_state *State)
+internal void ProcessInput(game_input *KeyboardInput, app_state *State)
 {
 	display_input *DisplayInput = &State->DisplayInput;
 
@@ -16,31 +16,31 @@ internal void ProcessInput(keyboard_input *KeyboardInput, app_state *State)
 	{ DisplayInput->Start = true; }
 	else { DisplayInput->Start = false; }
 
-	if(KeyboardInput->J.IsDown){ DisplayInput->A = true; }
+	if(KeyboardInput->ActionA.IsDown){ DisplayInput->A = true; }
 	else { DisplayInput->A = false; }
 
-	if(KeyboardInput->K.IsDown){ DisplayInput->B = true; }
+	if(KeyboardInput->ActionB.IsDown){ DisplayInput->B = true; }
 	else { DisplayInput->B = false; }
 
-	if(KeyboardInput->L.IsDown){ DisplayInput->C = true; }
+	if(KeyboardInput->ActionC.IsDown){ DisplayInput->C = true; }
 	else { DisplayInput->C = false; }
 
 	uint32 DpadValue = 0;
 	int32 LeftRight = 0;
 	int32 UpDown = 0;
 
-	if(KeyboardInput->A.IsDown && !KeyboardInput->D.IsDown)
+	if(KeyboardInput->MoveLeft.IsDown && !KeyboardInput->MoveRight.IsDown)
 	{
 		LeftRight = -1;
-	} else if(KeyboardInput->D.IsDown && !KeyboardInput->A.IsDown)
+	} else if(KeyboardInput->MoveDown.IsDown && !KeyboardInput->MoveLeft.IsDown)
 	{
 		LeftRight = 1;
 	}
 
-	if(KeyboardInput->W.IsDown && !KeyboardInput->S.IsDown)
+	if(KeyboardInput->MoveUp.IsDown && !KeyboardInput->MoveDown.IsDown)
 	{
 		UpDown = 1;
-	} else if(KeyboardInput->S.IsDown && !KeyboardInput->W.IsDown)
+	} else if(KeyboardInput->MoveDown.IsDown && !KeyboardInput->MoveUp.IsDown)
 	{
 		UpDown = -1;
 	}
@@ -55,34 +55,34 @@ internal void ProcessInput(keyboard_input *KeyboardInput, app_state *State)
 	if(LeftRight == -1 && UpDown == -1){ DpadValue = 8; }
 	
 
-	if(KeyboardInput->A.IsDown && !KeyboardInput->D.IsDown)
+	if(KeyboardInput->MoveLeft.IsDown && !KeyboardInput->MoveRight.IsDown)
 	{
-		if(KeyboardInput->W.IsDown)
+		if(KeyboardInput->MoveDown.IsDown)
 		{
 			DpadValue = 2; 
-		} else if(KeyboardInput->S.IsDown)
+		} else if(KeyboardInput->MoveDown.IsDown)
 		{
 			DpadValue = 8;
 		} else
 		{
 			DpadValue = 1;
 		}
-	} else if(KeyboardInput->D.IsDown && !KeyboardInput->A.IsDown)
+	} else if(KeyboardInput->MoveRight.IsDown && !KeyboardInput->MoveLeft.IsDown)
 	{
-		if(KeyboardInput->W.IsDown)
+		if(KeyboardInput->MoveUp.IsDown)
 		{
 			DpadValue = 4; 
-		} else if(KeyboardInput->S.IsDown)
+		} else if(KeyboardInput->MoveDown.IsDown)
 		{
 			DpadValue = 6;
 		} else
 		{
 			DpadValue = 5;
 		}
-	} else if(KeyboardInput->W.IsDown && !KeyboardInput->S.IsDown)
+	} else if(KeyboardInput->MoveUp.IsDown && !KeyboardInput->MoveDown.IsDown)
 	{
 		DpadValue = 3;
-	} else if(KeyboardInput->S.IsDown && !KeyboardInput->W.IsDown)
+	} else if(KeyboardInput->MoveDown.IsDown && !KeyboardInput->MoveUp.IsDown)
 	{
 		DpadValue = 7;
 	}
@@ -718,7 +718,7 @@ internal void Initialise(app_memory *Memory)
 }
 
 
-internal void Update(keyboard_input *KeyboardInput, app_memory *Memory)
+internal void Update(game_input *KeyboardInput, app_memory *Memory)
 {
 	app_state *AppState = (app_state *)Memory->PermanentStorage;
 
