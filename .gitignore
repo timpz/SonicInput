@@ -1,0 +1,7 @@
+#folders
+./_build
+./.vscode
+
+
+#specific files
+*.rdbg
