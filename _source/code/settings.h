@@ -6,4 +6,4 @@
 
 #define TARGET_FRAMERATE 60.0f
 
-#define APP_NAME "Scratch App"
+#define APP_NAME "SonicInput"
