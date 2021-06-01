@@ -131,6 +131,7 @@ struct game_input
 
 struct input
 {
+	int32 SelectedDevice;
 	union
 	{
 		game_input Device[3];

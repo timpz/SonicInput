@@ -7,42 +7,42 @@ internal void ProcessInput(input *DeviceInputs, app_state *State)
 {
 	display_input *DisplayInput = &State->DisplayInput;
 
-	game_input *KeyboardController = &DeviceInputs->KeyboardController;
+	game_input *SelectedController = &DeviceInputs->Device[DeviceInputs->SelectedDevice];
 
-	if(KeyboardController->ExitApp.IsDown != false)
+	if(SelectedController->ExitApp.IsDown != false)
 	{
 		GlobalRunning = false;
 	}
 
-	if(KeyboardController->Enter.IsDown)
+	if(SelectedController->Enter.IsDown)
 	{ DisplayInput->Start = true; }
 	else { DisplayInput->Start = false; }
 
-	if(KeyboardController->ActionA.IsDown){ DisplayInput->A = true; }
+	if(SelectedController->ActionA.IsDown){ DisplayInput->A = true; }
 	else { DisplayInput->A = false; }
 
-	if(KeyboardController->ActionB.IsDown){ DisplayInput->B = true; }
+	if(SelectedController->ActionB.IsDown){ DisplayInput->B = true; }
 	else { DisplayInput->B = false; }
 
-	if(KeyboardController->ActionC.IsDown){ DisplayInput->C = true; }
+	if(SelectedController->ActionC.IsDown){ DisplayInput->C = true; }
 	else { DisplayInput->C = false; }
 
 	uint32 DpadValue = 0;
 	int32 LeftRight = 0;
 	int32 UpDown = 0;
 
-	if(KeyboardController->MoveLeft.IsDown && !KeyboardController->MoveRight.IsDown)
+	if(SelectedController->MoveLeft.IsDown && !SelectedController->MoveRight.IsDown)
 	{
 		LeftRight = -1;
-	} else if(KeyboardController->MoveDown.IsDown && !KeyboardController->MoveLeft.IsDown)
+	} else if(SelectedController->MoveDown.IsDown && !SelectedController->MoveLeft.IsDown)
 	{
 		LeftRight = 1;
 	}
 
-	if(KeyboardController->MoveUp.IsDown && !KeyboardController->MoveDown.IsDown)
+	if(SelectedController->MoveUp.IsDown && !SelectedController->MoveDown.IsDown)
 	{
 		UpDown = 1;
-	} else if(KeyboardController->MoveDown.IsDown && !KeyboardController->MoveUp.IsDown)
+	} else if(SelectedController->MoveDown.IsDown && !SelectedController->MoveUp.IsDown)
 	{
 		UpDown = -1;
 	}
@@ -57,34 +57,34 @@ internal void ProcessInput(input *DeviceInputs, app_state *State)
 	if(LeftRight == -1 && UpDown == -1){ DpadValue = 8; }
 	
 
-	if(KeyboardController->MoveLeft.IsDown && !KeyboardController->MoveRight.IsDown)
+	if(SelectedController->MoveLeft.IsDown && !SelectedController->MoveRight.IsDown)
 	{
-		if(KeyboardController->MoveDown.IsDown)
+		if(SelectedController->MoveUp.IsDown)
 		{
 			DpadValue = 2; 
-		} else if(KeyboardController->MoveDown.IsDown)
+		} else if(SelectedController->MoveDown.IsDown)
 		{
 			DpadValue = 8;
 		} else
 		{
 			DpadValue = 1;
 		}
-	} else if(KeyboardController->MoveRight.IsDown && !KeyboardController->MoveLeft.IsDown)
+	} else if(SelectedController->MoveRight.IsDown && !SelectedController->MoveLeft.IsDown)
 	{
-		if(KeyboardController->MoveUp.IsDown)
+		if(SelectedController->MoveUp.IsDown)
 		{
 			DpadValue = 4; 
-		} else if(KeyboardController->MoveDown.IsDown)
+		} else if(SelectedController->MoveDown.IsDown)
 		{
 			DpadValue = 6;
 		} else
 		{
 			DpadValue = 5;
 		}
-	} else if(KeyboardController->MoveUp.IsDown && !KeyboardController->MoveDown.IsDown)
+	} else if(SelectedController->MoveUp.IsDown && !SelectedController->MoveDown.IsDown)
 	{
 		DpadValue = 3;
-	} else if(KeyboardController->MoveDown.IsDown && !KeyboardController->MoveUp.IsDown)
+	} else if(SelectedController->MoveDown.IsDown && !SelectedController->MoveUp.IsDown)
 	{
 		DpadValue = 7;
 	}

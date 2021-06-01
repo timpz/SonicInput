@@ -578,18 +578,20 @@ int32 CALLBACK WinMain
 			AppBuffer.Memory = Win32BackBuffer->Memory;
 
 
-
 			input *NewInput = &DeviceInputs[0];
 			input *OldInput = &DeviceInputs[1];
 
 			*NewInput = {};
 			*OldInput = {};
 
+			DeviceInputs[0].SelectedDevice = 1;
+			DeviceInputs[1].SelectedDevice = 1;
+
 			game_input *KeyboardController = &NewInput->KeyboardController;
 			game_input *DInputController = &NewInput->DInputController;
 
 			LPDIRECTINPUT8 DInputPointer = 0;
-			LPDIRECTINPUTDEVICE8A DInputDevice = 0;
+			LPDIRECTINPUTDEVICE8 DInputDevice = 0;
 
 			if(DirectInput8Create(Instance, DIRECTINPUT_VERSION, IID_IDirectInput8A, (void**)&DInputPointer, NULL) == DI_OK)
 			{
@@ -715,7 +717,7 @@ int32 CALLBACK WinMain
 				input *TempDeviceInput = NewInput;
 				OldInput = NewInput;
 				OldInput = TempDeviceInput;
-				*NewInput = {};
+				// *NewInput = {};
 
 				// Enforce Framerate
 				int64 FramerateCounterEnd = ReturnQPC();
