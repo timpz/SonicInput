@@ -439,8 +439,8 @@ internal LRESULT CALLBACK Win32MainWindowCallback
 		{
 			// Unfocusing the app could make the HeldDownCount behave badly. 
 			// For this reason we always clear inputs to 0 when coming back into focus
-			DeviceInputs[0] = {};
-			DeviceInputs[1] = {};
+			DeviceInputs[0].DInputController = {};
+			DeviceInputs[1].DInputController = {};
 		} break;
 
 		case WM_PAINT:
