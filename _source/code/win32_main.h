@@ -2,7 +2,10 @@
 
 #include <windows.h>
 #include <iostream>
+
+#define DIRECTINPUT_VERSION 0x0800
 #include <dinput.h>
+
 #include "app.h"
 
 struct win32_window_dimension

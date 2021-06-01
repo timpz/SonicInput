@@ -1,4 +1,4 @@
 @echo off
 pushd _build
-ScratchApp_x64.exe
+SonicInput.exe
 popd

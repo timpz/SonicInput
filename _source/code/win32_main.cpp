@@ -9,7 +9,7 @@ global bool32 GlobalRunning;
 #include "app.cpp"
 
 local_persist win32_offscreen_buffer *Win32BackBuffer;
-// local_persist game_input Win32Keyboard[2];
+local_persist input DeviceInputs[2];
 local_persist GUID GlobalControllerGUID;
 
 DEBUG_PLATFORM_FREE_FILE_MEMORY(DEBUGPlatformFreeFileMemory)
@@ -439,8 +439,8 @@ internal LRESULT CALLBACK Win32MainWindowCallback
 		{
 			// Unfocusing the app could make the HeldDownCount behave badly. 
 			// For this reason we always clear inputs to 0 when coming back into focus
-			Win32Keyboard[0] = {};
-			Win32Keyboard[1] = {};
+			DeviceInputs[0] = {};
+			DeviceInputs[1] = {};
 		} break;
 
 		case WM_PAINT:
@@ -493,13 +493,13 @@ internal BOOL DirectInputEnumCallback(LPCDIDEVICEINSTANCE DirectInputPointer, LP
 	return true;
 }
 
-inline game_input *GetController(input *Input, int DeviceIndex)
-{
-	Assert(ControllerIndex < ArrayCount(Input->Controllers));
+// inline game_input *GetController(input *Input, int DeviceIndex)
+// {
+// 	Assert(ControllerIndex < ArrayCount(Input->Controllers));
 
-	game_controller_input *Result = &Input->Controllers[ControllerIndex];
-	return(Result);
-}
+// 	game_input *Result = Input->Device + DeviceIndex;
+// 	return(Result);
+// }
 
 int32 CALLBACK WinMain
 (
@@ -577,25 +577,19 @@ int32 CALLBACK WinMain
 			AppBuffer.Pitch = Win32BackBuffer->Pitch;
 			AppBuffer.Memory = Win32BackBuffer->Memory;
 
-			input DeviceInput = {};
-			// 0 is keyboard
-			// 1 is DInput
-			// 2 will be XInput eventually
 
-			game_input Win32Keyboard[2] = {};
-			game_input *NewKeyboard = &Win32Keyboard[0];
-			game_input *OldKeyboard = &Win32Keyboard[1];
 
-			game_input DInput[2] = {};
-			game_input *NewDInput = &DInput[0];
-			game_input *OldDInput = &DInput[1];
+			input *NewInput = &DeviceInputs[0];
+			input *OldInput = &DeviceInputs[1];
 
-			DeviceInput.Device[0] = Win32Keyboard[0];
-			DeviceInput.Device[1] = DInput[0];
+			*NewInput = {};
+			*OldInput = {};
 
+			game_input *KeyboardController = &NewInput->KeyboardController;
+			game_input *DInputController = &NewInput->DInputController;
 
 			LPDIRECTINPUT8 DInputPointer = 0;
-			LPDIRECTINPUTDEVICE8A DInputController = 0;
+			LPDIRECTINPUTDEVICE8A DInputDevice = 0;
 
 			if(DirectInput8Create(Instance, DIRECTINPUT_VERSION, IID_IDirectInput8A, (void**)&DInputPointer, NULL) == DI_OK)
 			{
@@ -603,11 +597,11 @@ int32 CALLBACK WinMain
 				bool32 EnumValue = 0;
 				DInputPointer->EnumDevices(DI8DEVCLASS_GAMECTRL, DirectInputEnumCallback, (LPVOID)&EnumValue, DIEDFL_ATTACHEDONLY);
 
-				DInputPointer->CreateDevice(GlobalControllerGUID, &DInputController, NULL);
-				if(DInputController != 0)
+				DInputPointer->CreateDevice(GlobalControllerGUID, &DInputDevice, NULL);
+				if(DInputDevice != 0)
 				{
-					DInputController->SetDataFormat(&c_dfDIJoystick);
-					DInputController->Acquire();
+					DInputDevice->SetDataFormat(&c_dfDIJoystick);
+					DInputDevice->Acquire();
 				}
 			}
 
@@ -646,59 +640,46 @@ int32 CALLBACK WinMain
 
 			while(GlobalRunning)
 			{
-				Win32ProcessPendingMessages(NewKeyboard);
+				Win32ProcessPendingMessages(KeyboardController);
 
 
+				DIJOYSTATE DIState = {};
 
+				if(DInputDevice != 0)
+				{
+					DInputDevice->GetDeviceState(sizeof(DIJOYSTATE), (LPVOID)&DIState);
+					game_input ZeroDIController = {};
 
+					*DInputController = {};//ZeroDIController;
 
+					uint32 DIPOV = DIState.rgdwPOV[0]/4500;
 
-
-
-#if 1
-					DIJOYSTATE DIState = {};
-
-					if(DInputController != 0)
+					// DInputController->AverageX = 0.0f;
+					if(DIPOV > 0 && DIPOV <= 3)
 					{
-						DInputController->GetDeviceState(sizeof(DIJOYSTATE), (LPVOID)&DIState);
-
-
-						game_input *NewDIController = GetController(NewInput, 2);
-						game_input *OldDIController = GetController(OldInput, 2);
-						game_input ZeroDIController = {};
-						*NewDIController = ZeroDIController;
-
-						uint32 DIPOV = DIState.rgdwPOV[0]/4500;
-
-						NewDIController->AverageX = 0.0f;
-						if(DIPOV > 0 && DIPOV <= 3)
-						{
-							NewDIController->AverageX = 1.0f;
-						}
-						else if(DIPOV > 4 && DIPOV <= 7)
-						{
-							NewDIController->AverageX = -1.0f;
-						}
-
-						NewDIController->AverageY = 0.0f;
-						if((DIPOV < 2 || DIPOV > 6) && DIPOV < 8)
-						{
-							NewDIController->AverageY = 1.0f;
-						}
-						else if(DIPOV > 2 && DIPOV <= 5)
-						{
-							NewDIController->AverageY = -1.0f;
-						}
-
-						NewDIController->ActionLeft.EndedDown = (bool32)DIState.rgbButtons[1];
-						NewDIController->ActionDown.EndedDown = (bool32)DIState.rgbButtons[2];
-						NewDIController->ActionRight.EndedDown = (bool32)DIState.rgbButtons[3];
-
-						NewDIController->Start.EndedDown = (bool32)DIState.rgbButtons[9];
-
-
+						DInputController->MoveRight.IsDown = true;
 					}
-#endif
+					else if(DIPOV > 4 && DIPOV <= 7)
+					{
+						DInputController->MoveLeft.IsDown = true;
+					}
+
+					// NewDIController->AverageY = 0.0f;
+					if((DIPOV < 2 || DIPOV > 6) && DIPOV < 8)
+					{
+						DInputController->MoveUp.IsDown = true;
+					}
+					else if(DIPOV > 2 && DIPOV <= 5)
+					{
+						DInputController->MoveDown.IsDown = true;
+					}
+
+					DInputController->ActionA.IsDown = (bool32)DIState.rgbButtons[1];
+					DInputController->ActionB.IsDown = (bool32)DIState.rgbButtons[2];
+					DInputController->ActionC.IsDown = (bool32)DIState.rgbButtons[3];
+
+					DInputController->Enter.IsDown = (bool32)DIState.rgbButtons[9];
+				}
 
 
 
@@ -712,10 +693,7 @@ int32 CALLBACK WinMain
 
 
 
-
-
-
-				Update(NewKeyboard, &AppMemory);
+				Update(DeviceInputs, &AppMemory);
 				Render(&AppBuffer, &AppMemory);
 
 				Win32DisplayBufferInWindow
@@ -724,20 +702,20 @@ int32 CALLBACK WinMain
 					WINDOW_WIDTH, WINDOW_HEIGHT
 				);
 
-				game_input *TempKeyboardPointer = NewKeyboard;
-				NewKeyboard = OldKeyboard;
-				OldKeyboard = TempKeyboardPointer;
-
-				*NewKeyboard = {};
-				for(int32 ButtonIndex = 0; ButtonIndex < ArrayCount(NewKeyboard->Buttons); ButtonIndex++)
+				for(int32 ButtonIndex = 0; ButtonIndex < ArrayCount(NewInput->KeyboardController.Buttons); ButtonIndex++)
 				{
-					if(OldKeyboard->Buttons[ButtonIndex].IsDown)
+					if(OldInput->KeyboardController.Buttons[ButtonIndex].IsDown)
 					{
-						NewKeyboard->Buttons[ButtonIndex].IsDown = true;
-						NewKeyboard->Buttons[ButtonIndex].HeldDownCount = 
-							++OldKeyboard->Buttons[ButtonIndex].HeldDownCount;
+						NewInput->KeyboardController.Buttons[ButtonIndex].IsDown = true;
+						NewInput->KeyboardController.Buttons[ButtonIndex].HeldDownCount = 
+							++OldInput->KeyboardController.Buttons[ButtonIndex].HeldDownCount;
 					}
 				}
+
+				input *TempDeviceInput = NewInput;
+				OldInput = NewInput;
+				OldInput = TempDeviceInput;
+				*NewInput = {};
 
 				// Enforce Framerate
 				int64 FramerateCounterEnd = ReturnQPC();

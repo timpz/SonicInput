@@ -2,7 +2,7 @@
 cls
 
 rem Executable name
-set ApplicationName="ScratchApp"
+set ApplicationName="SonicInput"
 
 rem Set this to 1 if this build is not to be released publically
 set InternalBuild=1
@@ -38,12 +38,12 @@ rem wd4505	- Warning disabled: Unreferenced local function
 set CustomFlags= -DBUILD_INTERNAL=%InternalBuild% -DBUILD_SLOW=%SlowBuild%
 set CommonCompilerFlags= -MT -nologo -GR- -EHsc -EHa- -Od -Oi -fp:fast -WX -W4 -wd4201 -wd4100 -wd4189 -wd4333 -wd4505 %CustomFlags% -FC -Zi
 set SharedLinkerFlags= -incremental:no -DEBUG:FULL -opt:ref
-set CommonLinkerLibraries= user32.lib Gdi32.lib Winmm.lib
+set CommonLinkerLibraries= user32.lib Gdi32.lib Winmm.lib dinput8.lib dxguid.lib
  
 rem 64-bit build
 if not exist _build mkdir _build
 pushd _build
 del *.* /Q
 
-cl %CommonCompilerFlags% -Fm%ApplicationName%_x64.map ..\_source\code\win32_main.cpp /link %SharedLinkerFlags% %CommonLinkerLibraries% /out:%ApplicationName%_x64.exe
+cl %CommonCompilerFlags% -Fm%ApplicationName%.map ..\_source\code\win32_main.cpp /link %SharedLinkerFlags% %CommonLinkerLibraries% /out:%ApplicationName%.exe
 popd

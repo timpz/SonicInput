@@ -131,8 +131,17 @@ struct game_input
 
 struct input
 {
-
-	game_input Device[3];
+	union
+	{
+		game_input Device[3];
+		struct
+		{
+			game_input KeyboardController;
+			game_input DInputController;
+			game_input XInputController;
+		};
+	};
+	
 
 };
 
