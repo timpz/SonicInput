@@ -1,3 +1,5 @@
+#ifndef SETTINGS_H
+
 #define WINDOW_WIDTH 256
 #define WINDOW_HEIGHT 76
 
@@ -9,3 +11,6 @@
 #define APP_NAME "SonicInput"
 
 #define INPUT_DEVICE 0
+
+#define SETTINGS_H
+#endif

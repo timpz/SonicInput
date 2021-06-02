@@ -1,3 +1,5 @@
+#ifndef APP_MATH_H
+
 #include "app.h"
 
 #define PI 3.1415926535897f
@@ -17,3 +19,5 @@ struct vector3
 	float32 Z;
 };
 
+#define APP_MATH_H
+#endif
