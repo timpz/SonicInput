@@ -1,5 +1,6 @@
 #ifndef APP_MATH_H
 
+#include <math.h>
 #include "app.h"
 
 #define PI 3.1415926535897f
@@ -18,6 +19,8 @@ struct vector3
 	float32 Y;
 	float32 Z;
 };
+
+#include "app_math.cpp"
 
 #define APP_MATH_H
 #endif

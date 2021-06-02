@@ -1,5 +1,6 @@
 #include "app.h"
-#include "app_math.cpp"
+#include "app_math.h"
+// #include "app_math.cpp"
 #include "ShittyDrawingAPI.cpp"
 
 local_persist bool32 TestButton = false;

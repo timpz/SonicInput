@@ -1,6 +1,4 @@
-#include <math.h>
-#include "app.h"
-#include "app_math.h"
+#ifndef APP_MATH_CPP
 
 inline int32 FloorFloat32ToInt32(float32 Float32)
 {
@@ -94,3 +92,6 @@ internal vector2 InverseVector2(vector2 A)
 	vector2 Result = { -A.X, -A.Y };
 	return Result;
 }
+
+#define APP_MATH_CPP
+#endif

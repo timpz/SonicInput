@@ -1,5 +1,7 @@
-#include "app.h"
 #include "settings.h"
+#include "app.h"
+#include "app_math.h"
+#include "app_math.cpp"
 
 internal void DrawRectangle
 (
