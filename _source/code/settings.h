@@ -7,3 +7,5 @@
 #define TARGET_FRAMERATE 60.0f
 
 #define APP_NAME "SonicInput"
+
+#define INPUT_DEVICE 0

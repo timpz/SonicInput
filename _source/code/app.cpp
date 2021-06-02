@@ -9,7 +9,7 @@ internal void ProcessInput(input *DeviceInputs, app_state *State)
 
 	game_input *SelectedController = &DeviceInputs->Device[DeviceInputs->SelectedDevice];
 
-	if(SelectedController->ExitApp.IsDown != false)
+	if(DeviceInputs->KeyboardController.ExitApp.IsDown != false)
 	{
 		GlobalRunning = false;
 	}

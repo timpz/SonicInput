@@ -12,253 +12,6 @@ local_persist win32_offscreen_buffer *Win32BackBuffer;
 local_persist input DeviceInputs[2];
 local_persist GUID GlobalControllerGUID;
 
-DEBUG_PLATFORM_FREE_FILE_MEMORY(DEBUGPlatformFreeFileMemory)
-{
-	if(Memory)
-	{
-		VirtualFree(Memory, 0, MEM_RELEASE);
-	}
-}
-
-DEBUG_PLATFORM_READ_ENTIRE_FILE(DEBUGPlatformReadEntireFile)
-{
-	debug_read_file_result Result = {};
-	HANDLE FileHandle = CreateFileA
-		(
-			Filename,
-			GENERIC_READ,
-			FILE_SHARE_READ,
-			0,
-			OPEN_EXISTING,
-			0,
-			0
-		);
-
-	if(FileHandle)
-	{
-		LARGE_INTEGER FileSize;
-		if(GetFileSizeEx(FileHandle, &FileSize))
-		{
-			uint32 FileSize32 = SafeTruncateUInt64(FileSize.QuadPart);
-			Result.Content = VirtualAlloc(0, FileSize32, MEM_COMMIT|MEM_RESERVE, PAGE_READWRITE);
-			if(Result.Content)
-			{
-				DWORD BytesRead = {};
-				//NOTE: Set address in the function instead?
-				if(ReadFile(FileHandle, Result.Content, FileSize32, &BytesRead, 0) && (FileSize32 == BytesRead))
-				{
-					Result.ContentSize = FileSize32;
-				} else
-				{
-					//TODO: Logging
-					DEBUGPlatformFreeFileMemory(Result.Content);
-					Result.Content = 0;
-				}
-
-			} else
-			{
-				//TODO: Logging
-			}
-		} else
-		{
-			//TODO: Logging
-		}
-
-		CloseHandle(FileHandle);
-
-	} else
-	{
-		//TODO: Logging
-	}
-
-	return(Result);
-}
-
-internal uint32 StringLength(char *String)
-{
-	uint32 Result = 0;
-
-	for(uint32 i = 0;; i++)
-	{
-		if(String[i] == 0)
-		{
-			break;
-		}
-
-		Result++;
-	}
-
-	return Result;
-}
-
-internal void ConcatStrings(char *A, char *B, char *Dest)
-{
-
-	uint32 LengthA = StringLength(A);
-	uint32 LengthB = StringLength(B);
-
-	for(uint32 i = 0; i < LengthA; i++)
-	{
-		Dest[i] = A[i];
-	}
-
-	for(uint32 i = 0; i < LengthB; i++)
-	{
-		Dest[i + LengthA] = B[i];
-	}
-}
-
-internal void CopyString(char *From, char *To)
-{
-	uint32 LengthFrom = StringLength(From);
-	uint32 LengthTo = StringLength(To);
-
-	// Assert(LengthFrom <= LengthTo);
-
-	for(uint32 i = 0; i < LengthFrom; i++)
-	{
-		To[i] = From[i];
-	}
-}
-
-internal void CopyString(char *From, char *To, char EndCharacter)
-{
-	uint32 LengthFrom = StringLength(From);
-	uint32 LengthTo = StringLength(To);
-
-	// Assert(LengthFrom <= LengthTo);
-
-	for(uint32 i = 0; i < LengthFrom; i++)
-	{
-		if(From[i] == EndCharacter){ break; }
-		To[i] = From[i];
-	}
-}
-
-internal void ConvertValueToHex(uint8 Value, char *String)
-{
-	uint8 HighByte = Value & 0xF0;
-	HighByte = HighByte >> 4;
-	uint8 LowByte = Value & 0x0F;
-
-	char Result[2] = {};
-
-	if(HighByte < 0xA)
-	{
-		Result[0] = HighByte + 0x30;
-	} else
-	{
-		Result[0] = HighByte + 0x37;
-	}
-
-	if(LowByte < 0xA)
-	{
-		Result[1] = LowByte + 0x30;
-	} else
-	{
-		Result[1] = LowByte + 0x37;
-	}
-
-	CopyString(Result, String);
-}
-
-DEBUG_PLATFORM_WRITE_FILE_MEMORY(DEBUGPlatformWriteFileMemory)
-{
-
-	bool32 Result = false;
-
-	HANDLE FileHandle = CreateFileA
-		(
-			FileName,
-			GENERIC_WRITE,
-			0,
-			0,
-			CREATE_ALWAYS,
-			0,
-			0
-		);
-	
-	if(FileHandle != INVALID_HANDLE_VALUE)
-	{
-		DWORD BytesWritten = {};
-
-		char CodeStart[64] = {};
-		char CopyBuffer[64] = {};
-
-		char FileNameWithoutType[64] = {};
-		CopyString(FileName, FileNameWithoutType, '.');
-
-		char *BeginningOfFile = "static uint8_t ";
-		ConcatStrings(BeginningOfFile, FileNameWithoutType, CopyBuffer);
-		char *BeginningOfFile2 = "[] =\n{\n\t";
-		
-		ConcatStrings(CopyBuffer, BeginningOfFile2, CodeStart);
-		// uint32 CodeStartLength = StringLength(CodeStart); 
-
-		char *CodeEnd = "\n};";
-		// uint32 CodeEndLength = StringLength(CodeEnd);
-
-		char *ValuePrefix = "0x";
-		// uint32 PrefixLength = StringLength(ValuePrefix);
-
-		// uint8 Data = 0x1;
-
-		uint8 *Data = (uint8 *)Memory;
-
-
-		WriteFile(FileHandle, CodeStart, StringLength(CodeStart), &BytesWritten, 0);
-
-		for(uint32 CurrentByte = 0; CurrentByte < FileSize; CurrentByte++)
-		{
-
-			char DataString[64] = {};
-			ConvertValueToHex(*Data++, DataString);
-
-			char ConcatenatedData[64] = {};
-			ConcatStrings(ValuePrefix, DataString, ConcatenatedData);
-			uint32 DataStringLength = StringLength(ConcatenatedData);
-
-			WriteFile(FileHandle, ConcatenatedData, DataStringLength, &BytesWritten, 0);
-
-			if(CurrentByte < FileSize - 1)
-			{
-				char *StringBetweenData = ", ";
-				
-				WriteFile(FileHandle, StringBetweenData, StringLength(StringBetweenData), &BytesWritten, 0);
-
-				if(((CurrentByte + 1) % 8) == 0 && CurrentByte != 1)
-				{
-					char *NewLine = "\n\t";
-					WriteFile(FileHandle, NewLine, StringLength(NewLine), &BytesWritten, 0);
-				}
-			}
-		}
-
-		
-
-		WriteFile(FileHandle, CodeEnd, StringLength(CodeEnd), &BytesWritten, 0);
-
-		// WriteFile(FileHandle, Memory, sizeof(image)-8, &BytesWritten, 0);
-
-		// image *Image = (image *)Memory;
-		// WriteFile(FileHandle, Image->Data, Image->Header.Width * Image->Header.Height, &BytesWritten, 0);
-
-
-		//NOTE: File read successfully)
-		// Result = (BytesWritten == Filesize);
-
-
-		CloseHandle(FileHandle);
-
-	} else
-	{
-		//TODO: Logging
-	}
-
-	return(Result);
-}
-
-
 internal void Win32ResizeDIB
 (
 	win32_offscreen_buffer *Buffer, 
@@ -374,10 +127,6 @@ internal void Win32ProcessPendingMessages(game_input *Keyboard)
 						Win32ProcessKeyboardMessage(&Keyboard->Enter, IsDown);
 					}
 
-
-
-
-
 					if(VKCode == VK_ESCAPE)
 					{
 						Win32ProcessKeyboardMessage(&Keyboard->ExitApp, IsDown);
@@ -435,13 +184,13 @@ internal LRESULT CALLBACK Win32MainWindowCallback
 			GlobalRunning = false;
 		} break;
 
-		case WM_ACTIVATEAPP:
-		{
+		// case WM_ACTIVATEAPP:
+		// {
 			// Unfocusing the app could make the HeldDownCount behave badly. 
 			// For this reason we always clear inputs to 0 when coming back into focus
-			DeviceInputs[0].DInputController = {};
-			DeviceInputs[1].DInputController = {};
-		} break;
+			// DeviceInputs[0].DInputController = {};
+			// DeviceInputs[1].DInputController = {};
+		// } break;
 
 		case WM_PAINT:
 		{
@@ -487,19 +236,51 @@ internal BOOL DirectInputEnumCallback(LPCDIDEVICEINSTANCE DirectInputPointer, LP
 	if(*Switcher == false)
 	{
 		GlobalControllerGUID = DirectInputPointer->guidInstance;
-		// GlobalDIControllerName = DirectInputPointer->tszInstanceName;
 		*Switcher = true;
 	}
 	return true;
 }
 
-// inline game_input *GetController(input *Input, int DeviceIndex)
-// {
-// 	Assert(ControllerIndex < ArrayCount(Input->Controllers));
+internal void ProcessDInput(LPDIRECTINPUTDEVICE8 DInputDevice, game_input *DInputController)
+{
+	DIJOYSTATE DIState = {};
 
-// 	game_input *Result = Input->Device + DeviceIndex;
-// 	return(Result);
-// }
+	if(DInputDevice != 0)
+	{
+		DInputDevice->GetDeviceState(sizeof(DIJOYSTATE), (LPVOID)&DIState);
+		game_input ZeroDIController = {};
+
+		*DInputController = {};
+
+		uint32 DIPOV = DIState.rgdwPOV[0]/4500;
+
+		// DInputController->AverageX = 0.0f;
+		if(DIPOV > 0 && DIPOV <= 3)
+		{
+			DInputController->MoveRight.IsDown = true;
+		}
+		else if(DIPOV > 4 && DIPOV <= 7)
+		{
+			DInputController->MoveLeft.IsDown = true;
+		}
+
+		// NewDIController->AverageY = 0.0f;
+		if((DIPOV < 2 || DIPOV > 6) && DIPOV < 8)
+		{
+			DInputController->MoveUp.IsDown = true;
+		}
+		else if(DIPOV > 2 && DIPOV <= 5)
+		{
+			DInputController->MoveDown.IsDown = true;
+		}
+
+		DInputController->ActionA.IsDown = (bool32)DIState.rgbButtons[0];
+		DInputController->ActionB.IsDown = (bool32)DIState.rgbButtons[1];
+		DInputController->ActionC.IsDown = (bool32)DIState.rgbButtons[2];
+
+		DInputController->Enter.IsDown = (bool32)DIState.rgbButtons[5];
+	}
+}
 
 int32 CALLBACK WinMain
 (
@@ -584,8 +365,8 @@ int32 CALLBACK WinMain
 			*NewInput = {};
 			*OldInput = {};
 
-			DeviceInputs[0].SelectedDevice = 1;
-			DeviceInputs[1].SelectedDevice = 1;
+			DeviceInputs[0].SelectedDevice = INPUT_DEVICE;
+			DeviceInputs[1].SelectedDevice = INPUT_DEVICE;
 
 			game_input *KeyboardController = &NewInput->KeyboardController;
 			game_input *DInputController = &NewInput->DInputController;
@@ -607,7 +388,6 @@ int32 CALLBACK WinMain
 				}
 			}
 
-		
 #if BUILD_INTERNAL
 			LPVOID BaseAddress = (LPVOID)Terabytes(2);
 #else
@@ -618,9 +398,9 @@ int32 CALLBACK WinMain
 			AppMemory.PermanentStorageSize = Megabytes(64);
 			AppMemory.TransientStorageSize = Megabytes(0);
 
-			AppMemory.DEBUGPlatformFreeFileMemory = DEBUGPlatformFreeFileMemory;
-			AppMemory.DEBUGPlatformReadEntireFile= DEBUGPlatformReadEntireFile;
-			AppMemory.DEBUGPlatformWriteFileMemory = DEBUGPlatformWriteFileMemory;
+			// AppMemory.DEBUGPlatformFreeFileMemory = DEBUGPlatformFreeFileMemory;
+			// AppMemory.DEBUGPlatformReadEntireFile= DEBUGPlatformReadEntireFile;
+			// AppMemory.DEBUGPlatformWriteFileMemory = DEBUGPlatformWriteFileMemory;
 
 			uint64 TotalSize = AppMemory.PermanentStorageSize + AppMemory.TransientStorageSize;
 
@@ -628,7 +408,6 @@ int32 CALLBACK WinMain
 											MEM_RESERVE|MEM_COMMIT, PAGE_READWRITE);
 			AppMemory.TransientStorage = ((uint8 *)AppMemory.PermanentStorage + 
 													AppMemory.PermanentStorageSize);
-
 
 			Initialise(&AppMemory);
 
@@ -643,57 +422,7 @@ int32 CALLBACK WinMain
 			while(GlobalRunning)
 			{
 				Win32ProcessPendingMessages(KeyboardController);
-
-
-				DIJOYSTATE DIState = {};
-
-				if(DInputDevice != 0)
-				{
-					DInputDevice->GetDeviceState(sizeof(DIJOYSTATE), (LPVOID)&DIState);
-					game_input ZeroDIController = {};
-
-					*DInputController = {};//ZeroDIController;
-
-					uint32 DIPOV = DIState.rgdwPOV[0]/4500;
-
-					// DInputController->AverageX = 0.0f;
-					if(DIPOV > 0 && DIPOV <= 3)
-					{
-						DInputController->MoveRight.IsDown = true;
-					}
-					else if(DIPOV > 4 && DIPOV <= 7)
-					{
-						DInputController->MoveLeft.IsDown = true;
-					}
-
-					// NewDIController->AverageY = 0.0f;
-					if((DIPOV < 2 || DIPOV > 6) && DIPOV < 8)
-					{
-						DInputController->MoveUp.IsDown = true;
-					}
-					else if(DIPOV > 2 && DIPOV <= 5)
-					{
-						DInputController->MoveDown.IsDown = true;
-					}
-
-					DInputController->ActionA.IsDown = (bool32)DIState.rgbButtons[1];
-					DInputController->ActionB.IsDown = (bool32)DIState.rgbButtons[2];
-					DInputController->ActionC.IsDown = (bool32)DIState.rgbButtons[3];
-
-					DInputController->Enter.IsDown = (bool32)DIState.rgbButtons[9];
-				}
-
-
-
-
-
-
-
-
-
-
-
-
+				ProcessDInput(DInputDevice, DInputController);
 
 				Update(DeviceInputs, &AppMemory);
 				Render(&AppBuffer, &AppMemory);
@@ -717,7 +446,6 @@ int32 CALLBACK WinMain
 				input *TempDeviceInput = NewInput;
 				OldInput = NewInput;
 				OldInput = TempDeviceInput;
-				// *NewInput = {};
 
 				// Enforce Framerate
 				int64 FramerateCounterEnd = ReturnQPC();
