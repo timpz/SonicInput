@@ -1,5 +1,11 @@
 #ifndef APP_MATH_CPP
 
+inline float32 Sine(float32 Angle)
+{
+	float32 Result = sinf(Angle);
+	return Result;
+}
+
 inline int32 FloorFloat32ToInt32(float32 Float32)
 {
 	int32 Result = (int32)floorf(Float32);
@@ -32,6 +38,12 @@ inline float32 RandomFloat32(float32 Low, float32 High)
 {
 	float32 RandomValue = rand() % 10001 / 10000.0f; // Gives a value between 0.0f and 1.0f
 	float32 Result = (High - Low) * RandomValue + Low;
+	return Result;
+}
+
+inline float32 ModuloFloat32(float32 Float32, float32 Mod)
+{
+	float32 Result = fmodf(Float32, Mod);
 	return Result;
 }
 

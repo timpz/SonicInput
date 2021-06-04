@@ -91,7 +91,8 @@ struct app_memory
 
 struct offscreen_buffer
 {
-	void *Memory;
+	void *BackgroundLayer;
+	void *ForegroundLayer;
 	int32 Width;
 	int32 Height;
 	int32 Pitch;

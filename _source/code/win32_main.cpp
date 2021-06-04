@@ -8,9 +8,9 @@ global bool32 GlobalRunning;
 
 #include "app.cpp"
 
-local_persist win32_offscreen_buffer *Win32BackBuffer;
-local_persist input DeviceInputs[2];
-local_persist GUID GlobalControllerGUID;
+global win32_offscreen_buffer *Win32GlobalBackBuffer;
+global input DeviceInputs[2];
+global GUID GlobalControllerGUID;
 
 internal void Win32ResizeDIB
 (
@@ -199,7 +199,7 @@ internal LRESULT CALLBACK Win32MainWindowCallback
 
 			Win32DisplayBufferInWindow
 			(
-				Win32BackBuffer, DeviceContext,
+				Win32GlobalBackBuffer, DeviceContext,
 				WINDOW_WIDTH, WINDOW_HEIGHT
 			);
 		} break;
@@ -347,16 +347,21 @@ int32 CALLBACK WinMain
 			HDC DeviceContext = GetDC(Window);
 			GlobalRunning = true;
 
-			win32_offscreen_buffer BackBuffer = {};
-			Win32BackBuffer = &BackBuffer;
-			Win32ResizeDIB(Win32BackBuffer, WINDOW_WIDTH, WINDOW_HEIGHT);
+			win32_offscreen_buffer BackgroundBuffer = {};
+			win32_offscreen_buffer ForegroundBuffer = {};
+
+			Win32GlobalBackBuffer = &BackgroundBuffer;
+
+			Win32ResizeDIB(&BackgroundBuffer, WINDOW_WIDTH, WINDOW_HEIGHT);
+			Win32ResizeDIB(&ForegroundBuffer, WINDOW_WIDTH, WINDOW_HEIGHT);
 
 			offscreen_buffer AppBuffer = {};
-			AppBuffer.BytesPerPixel = Win32BackBuffer->BytesPerPixel;
-			AppBuffer.Height = Win32BackBuffer->Height;
-			AppBuffer.Width = Win32BackBuffer->Width;
-			AppBuffer.Pitch = Win32BackBuffer->Pitch;
-			AppBuffer.Memory = Win32BackBuffer->Memory;
+			AppBuffer.BytesPerPixel = BackgroundBuffer.BytesPerPixel;
+			AppBuffer.Height = BackgroundBuffer.Height;
+			AppBuffer.Width = BackgroundBuffer.Width;
+			AppBuffer.Pitch = BackgroundBuffer.Pitch;
+			AppBuffer.BackgroundLayer = BackgroundBuffer.Memory;
+			AppBuffer.ForegroundLayer = ForegroundBuffer.Memory;
 
 
 			input *NewInput = &DeviceInputs[0];
@@ -429,7 +434,7 @@ int32 CALLBACK WinMain
 
 				Win32DisplayBufferInWindow
 				(
-					Win32BackBuffer, DeviceContext,
+					&BackgroundBuffer, DeviceContext,
 					WINDOW_WIDTH, WINDOW_HEIGHT
 				);
 
