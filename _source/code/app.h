@@ -166,13 +166,13 @@ struct display_input
 
 	union
 	{
-		bool32 Buttons[4];
+		app_button_state Buttons[4];
 		struct
 		{
-			bool32 Start;
-			bool32 A;
-			bool32 B;
-			bool32 C;
+			app_button_state Start;
+			app_button_state A;
+			app_button_state B;
+			app_button_state C;
 		};
 		
 	};

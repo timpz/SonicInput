@@ -347,23 +347,18 @@ int32 CALLBACK WinMain
 			HDC DeviceContext = GetDC(Window);
 			GlobalRunning = true;
 
-			COLORREF rgbBlack =  0x00000000;
+			// COLORREF MaskingColour =  0x00FEFEFEFE;
+			// COLORREF MaskingColour =  0x00FFFFFFFF;
+			COLORREF MaskingColour =  0x00000000;
+			// COLORREF MaskingColour =  0x00010101;
 
 			SetLayeredWindowAttributes
 			(
 				Window, 
-				rgbBlack,
+				MaskingColour,
 				0xFF,
 				LWA_COLORKEY
 			);
-
-			// BOOL SetLayeredWindowAttributes(
-			// HWND     hwnd,
-			// COLORREF crKey,
-			// BYTE     bAlpha,
-			// DWORD    dwFlags
-			// );
-
 			win32_offscreen_buffer Win32BackgroundBuffer = {};
 			win32_offscreen_buffer Win32ForegroundBuffer = {};
 
@@ -472,6 +467,9 @@ int32 CALLBACK WinMain
 						NewInput->KeyboardController.Buttons[ButtonIndex].IsDown = true;
 						NewInput->KeyboardController.Buttons[ButtonIndex].HeldDownCount = 
 							++OldInput->KeyboardController.Buttons[ButtonIndex].HeldDownCount;
+					} else
+					{
+						NewInput->KeyboardController.Buttons[ButtonIndex].HeldDownCount = 0;
 					}
 				}
 

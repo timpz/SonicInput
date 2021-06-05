@@ -6,6 +6,34 @@ inline float32 Sine(float32 Angle)
 	return Result;
 }
 
+inline float32 SmallestFloat32(float32 A, float32 B)
+{
+	float32 Result = 0;
+	if(A < B)
+	{
+		Result = A;
+	} else
+	{
+		Result = B;
+	}
+
+	return Result;
+}
+
+inline float32 LargestFloat32(float32 A, float32 B)
+{
+	float32 Result = 0;
+	if(A > B)
+	{
+		Result = A;
+	} else
+	{
+		Result = B;
+	}
+
+	return Result;
+}
+
 inline float32 ClampFloat32(float32 Value, float32 ClampingValue, bool32 UpperClamp)
 {
 	float32 Result = 0;
@@ -25,6 +53,26 @@ inline float32 ClampFloat32(float32 Value, float32 ClampingValue, bool32 UpperCl
 	}
 
 	return Result;
+}
+
+inline float32 LinerarInterpolationCubed(float32 Value, float32 Start, float32 End)
+{
+	Assert (Start < End);
+	float32 Range = End - Start;
+	float32 Ratio = Value - Start;
+	Ratio /= Range;
+
+	// Ratio *= Ratio*Ratio; //Cubed
+
+	// (x - 1)^3 +1
+
+	Ratio = Ratio - 1;
+
+	Ratio = Ratio*Ratio*Ratio*Ratio*Ratio + 1;
+
+	float32 Result = Ratio * Range + Start;
+	return Result;
+
 }
 
 inline float32 ClampFloat32(float32 Value, float32 LowerBound, float32 UpperBound)

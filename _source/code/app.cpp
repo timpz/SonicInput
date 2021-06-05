@@ -17,17 +17,51 @@ internal void ProcessInput(input *DeviceInputs, app_state *State)
 	}
 
 	if(SelectedController->Enter.IsDown)
-	{ DisplayInput->Start = true; }
-	else { DisplayInput->Start = false; }
+	{ 
+		DisplayInput->Start.IsDown = true; 
+		DisplayInput->Start.HeldDownCount = SelectedController->Enter.HeldDownCount;
+	}
+	else 
+	{
+		DisplayInput->Start.IsDown = false;
+		DisplayInput->Start.HeldDownCount = 0; 
+	}
 
-	if(SelectedController->ActionA.IsDown){ DisplayInput->A = true; }
-	else { DisplayInput->A = false; }
+	if(SelectedController->ActionA.IsDown)
+	{
+		DisplayInput->A.IsDown = true;
+		DisplayInput->A.HeldDownCount = SelectedController->ActionA.HeldDownCount;
 
-	if(SelectedController->ActionB.IsDown){ DisplayInput->B = true; }
-	else { DisplayInput->B = false; }
+	}
+	else 
+	{ 
+		DisplayInput->A.IsDown = false; 
+		DisplayInput->A.HeldDownCount = 0;
+	}
 
-	if(SelectedController->ActionC.IsDown){ DisplayInput->C = true; }
-	else { DisplayInput->C = false; }
+	if(SelectedController->ActionB.IsDown)
+	{
+		DisplayInput->B.IsDown = true;
+		DisplayInput->B.HeldDownCount = SelectedController->ActionB.HeldDownCount;
+
+	}
+	else 
+	{ 
+		DisplayInput->B.IsDown = false; 
+		DisplayInput->B.HeldDownCount = 0;
+	}
+
+	if(SelectedController->ActionC.IsDown)
+	{
+		DisplayInput->C.IsDown = true;
+		DisplayInput->C.HeldDownCount = SelectedController->ActionC.HeldDownCount;
+
+	}
+	else 
+	{ 
+		DisplayInput->C.IsDown = false; 
+		DisplayInput->C.HeldDownCount = 0;
+	}
 
 	uint32 DpadValue = 0;
 	int32 LeftRight = 0;
@@ -289,21 +323,89 @@ internal void Render(render_layers *RenderLayers, app_memory *Memory)
 	DrawRainbowHorizontal(RenderLayers->BackgroundBuffer, testvalue);
 	testvalue = ModuloFloat32(testvalue + 0.001f, 1.0f);
 
+
 	// Blank
 	DrawRectangle(RenderLayers->ForegroundBuffer, 0, 0, WINDOW_WIDTH, WINDOW_HEIGHT, 0, 0, 0);
 
-	DrawImage(RenderLayers->ForegroundBuffer, 10.0f, 10.0f, Dpad_Image);
-	DrawDirection(DisplayInput->Dpad, 10.0f, 10.0f, RenderLayers->ForegroundBuffer);
+	float32 ButtonLeft = 10.0f;
+	float32 ButtonBottom = 10.0f;
+	float32 ButtonDistanceBetween = 60.0f;
 
-	if(DisplayInput->Start)
+	float32 ButtonSide = 56.0f;
+
+	float32 ButtonLeftStart = ButtonLeft;
+	float32 ButtonLeftA = ButtonLeft + ButtonDistanceBetween;
+	float32 ButtonLeftB = ButtonLeft + ButtonDistanceBetween*2;
+	float32 ButtonLeftC = ButtonLeft + ButtonDistanceBetween*3;
+
+	DrawImage(RenderLayers->ForegroundBuffer, ButtonLeftStart, ButtonBottom, Dpad_Image);
+	DrawDirection(DisplayInput->Dpad, ButtonLeftStart, ButtonBottom, RenderLayers->ForegroundBuffer);
+
+	if(DisplayInput->Start.IsDown)
 	{
-		DrawImageOnTop(RenderLayers->ForegroundBuffer, 10.0f, 10.0f, S_Press);
+		DrawImageOnTop(RenderLayers->ForegroundBuffer, ButtonLeftStart, ButtonBottom, S_Press);
 	}
 	
-	DrawButton(DisplayInput->A, 70.0f, 10.0f, A_Press, A_Button, RenderLayers->ForegroundBuffer);
-	DrawButton(DisplayInput->B, 130.0f, 10.0f, B_Press, B_Button, RenderLayers->ForegroundBuffer);
-	DrawButton(DisplayInput->C, 190.0f, 10.0f, C_Press, C_Button, RenderLayers->ForegroundBuffer);
+	
 
-	JoinBuffers(RenderLayers);
+	DrawButton(DisplayInput->A.IsDown, ButtonLeftA, ButtonBottom, A_Press, A_Button, RenderLayers->ForegroundBuffer);
+	DrawButton(DisplayInput->B.IsDown, ButtonLeftB, ButtonBottom, B_Press, B_Button, RenderLayers->ForegroundBuffer);
+	DrawButton(DisplayInput->C.IsDown, ButtonLeftC, ButtonBottom, C_Press, C_Button, RenderLayers->ForegroundBuffer);
+
+	JoinBuffersFirstPass(RenderLayers);
+
+	DrawRectangle(RenderLayers->BackgroundBuffer, 0, 0, WINDOW_WIDTH, WINDOW_HEIGHT, 0.0f, 0.0f, 0.0f);
+
+	vector3 CircleColour = {0.01f, 0.01f, 0.01f};
+
+	float32 MinCircle = 27.5f;
+	float32 MaxCircle = 35.0f;
+	float32 SpeedMultiplier = 0.5f;
+
+	float32 CurrentCircleStart = MinCircle - 1.0f + DisplayInput->Start.HeldDownCount*SpeedMultiplier;
+	float32 CurrentCircleA = MinCircle + DisplayInput->A.HeldDownCount*SpeedMultiplier;
+	float32 CurrentCircleB = MinCircle + DisplayInput->B.HeldDownCount*SpeedMultiplier;
+	float32 CurrentCircleC = MinCircle + DisplayInput->C.HeldDownCount*SpeedMultiplier;
+
+	if(CurrentCircleStart > MaxCircle){ CurrentCircleStart = MaxCircle; }
+	CurrentCircleStart = LinerarInterpolationCubed(CurrentCircleStart, MinCircle, MaxCircle);
+
+	if(CurrentCircleA > MaxCircle){ CurrentCircleA = MaxCircle; }
+	CurrentCircleA = LinerarInterpolationCubed(CurrentCircleA, MinCircle, MaxCircle);
+
+	if(CurrentCircleB > MaxCircle){ CurrentCircleB = MaxCircle; }
+	CurrentCircleB = LinerarInterpolationCubed(CurrentCircleB, MinCircle, MaxCircle);
+
+	if(CurrentCircleC > MaxCircle){ CurrentCircleC = MaxCircle; }
+	CurrentCircleC = LinerarInterpolationCubed(CurrentCircleC, MinCircle, MaxCircle);
+
+	// DrawRectangle(RenderLayers->BackgroundBuffer, ButtonLeftStart + 11.0f, ButtonBottom + 11.0f, ButtonSide - 22.0f, ButtonSide - 22.0f, 0.01f, 0.01f, 0.01f);
+	// DrawCircle(RenderLayers->BackgroundBuffer, ButtonLeftStart + ButtonSide/2, ButtonBottom + ButtonSide/2, CurrentCircleStart, CircleColour);
+	
+	// DrawTriangle
+	// (
+	// 	RenderLayers->BackgroundBuffer, 
+	// 	{0, 0}, 
+	// 	{10, 10}, 
+	// 	{10, 10}, 
+	// 	{0.01f, 0.01f, 0.01f}
+	// );
+	
+	DrawTriangle
+	(
+		RenderLayers->BackgroundBuffer, 
+		{ButtonLeftStart + 11.0f, 			   ButtonBottom + 11.0f}, 
+		{ButtonLeftStart + ButtonSide - 11.0f, ButtonBottom + 11.0f}, 
+		{ButtonLeftStart + ButtonSide - 11.0f, ButtonBottom + ButtonSide - 11.0f}, 
+		{0.01f, 0.01f, 0.01f}
+	);
+
+	DrawCircle(RenderLayers->BackgroundBuffer, ButtonLeftA + ButtonSide/2, ButtonBottom + ButtonSide/2, CurrentCircleA, CircleColour);
+	DrawCircle(RenderLayers->BackgroundBuffer, ButtonLeftB + ButtonSide/2, ButtonBottom + ButtonSide/2, CurrentCircleB, CircleColour);
+	DrawCircle(RenderLayers->BackgroundBuffer, ButtonLeftC + ButtonSide/2, ButtonBottom + ButtonSide/2, CurrentCircleC, CircleColour);
+	
+
+
+	JoinBuffersSecondPass(RenderLayers);
 
 }

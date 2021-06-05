@@ -107,13 +107,75 @@ internal clamped_area ClampDrawingArea
 	}
 
 	Result.OffsetX = FloorFloat32ToInt32(OffsetX);
-	Result.OffsetX  = FloorFloat32ToInt32(OffsetY);
+	Result.OffsetY = FloorFloat32ToInt32(OffsetY);
 	Result.SizeX  = FloorFloat32ToInt32(SizeX);
 	Result.SizeY  = FloorFloat32ToInt32(SizeY);
 
 	return Result;
 }
 
+// Finds if Dot is on the left or right side of a vector between two vertices
+inline float32 CalculateSideOfDot(vector2 Dot, vector2 VerticeFrom, vector2 VerticeTo)
+{
+	// Based on the 3rd method here
+	// http://totologic.blogspot.com/2014/01/accurate-point-in-triangle-test.html
+
+}
+}
+
+internal void DrawTriangle(offscreen_buffer *Buffer, vector2 PosA, vector2 PosB, vector2 PosC, vector3 Colour)
+{
+	// Find Area
+	float32 OffsetX = 0.0f;
+
+	OffsetX = SmallestFloat32(PosA.X, PosB.X);
+	OffsetX = SmallestFloat32(OffsetX, PosC.X);
+
+	float32 SizeX = 0.0f;
+
+	SizeX = LargestFloat32(PosA.X, PosB.X);
+	SizeX = LargestFloat32(SizeX, PosC.X) - OffsetX;
+
+	float32 OffsetY = 0.0f;
+
+	OffsetY = SmallestFloat32(PosA.Y, PosB.Y);
+	OffsetY = SmallestFloat32(OffsetY, PosC.Y);
+
+	float32 SizeY = 0.0f;
+
+	SizeY = LargestFloat32(PosA.Y, PosB.Y);
+	SizeY = LargestFloat32(SizeY, PosC.Y) - OffsetY;
+
+	// Clamp Area
+	clamped_area Clamp = ClampDrawingArea(OffsetX, OffsetY, SizeX, SizeY);
+
+	uint32 *Row = (uint32 *)Buffer->StartOfBuffer;
+
+	Row += Clamp.OffsetX;
+	Row += (Buffer->Pitch / 4) * (WINDOW_HEIGHT - 1 - Clamp.OffsetY);
+
+	float32 Red = Colour.X;
+	float32 Green = Colour.Y;
+	float32 Blue = Colour.Z;
+
+	uint32 PixelColour = 
+	(
+		(0xFF << 24) |
+		(RoundFloat32ToUInt32(255.0f * Red) << 16)|
+		(RoundFloat32ToUInt32(255.0f * Green) << 8)|
+		(RoundFloat32ToUInt32(255.0f * Blue) << 0)
+	);
+
+	for (int32 Y = 0; Y < Clamp.SizeY; ++Y)
+	{
+		uint32 *Pixel = Row;
+		for(int32 X = 0; X < Clamp.SizeX; ++X)
+		{
+			*Pixel++ = PixelColour;
+		}
+		Row -= Buffer->Pitch/4;
+	}
+}
 
 internal void DrawRainbowHorizontal
 (
@@ -639,7 +701,7 @@ internal void DrawCircle
 	}
 }
 
-internal void JoinBuffers(render_layers *RenderLayers)
+internal void JoinBuffersFirstPass(render_layers *RenderLayers)
 {
 	uint32 *BGRow = (uint32 *)RenderLayers->BackgroundBuffer->StartOfBuffer;
 	BGRow += (RenderLayers->BackgroundBuffer->Pitch / 4) * (WINDOW_HEIGHT - 1);
@@ -655,25 +717,88 @@ internal void JoinBuffers(render_layers *RenderLayers)
 		for(int32 PixelX = 0; PixelX < WINDOW_WIDTH; PixelX++)
 		{
 
-			uint8 *PixelColour = (uint8 *)BGPixel;
+			uint8 *PixelColour = (uint8 *)BGPixel++;
 			float32 Blue = *PixelColour++;
 			float32 Green = *PixelColour++;
 			float32 Red = *PixelColour;
 
-			uint8 MaskValue = *(uint8 *)FGPixel++;
+			uint8 MaskValue = *(uint8 *)FGPixel;
+
+			if(MaskValue > 0xFF / 2)
+			{ MaskValue = 0xFF; } else
+			{ MaskValue = 0; }
+
 			float32 Ratio = ((float32)MaskValue) / ((float32)0xFF);
 
 			int32 ResultBlue = RoundFloat32ToInt32(Blue * Ratio);
 			int32 ResultGreen = RoundFloat32ToInt32(Green * Ratio);
 			int32 ResultRed = RoundFloat32ToInt32(Red * Ratio);
 			
-			*BGPixel++ = 
+			*FGPixel++ = 
+			(
+				(MaskValue << 24) |
+				(ResultRed << 16) |
+				(ResultGreen << 8) |
+				(ResultBlue << 0)
+			);
+			
+		}
+		BGRow -= RenderLayers->BackgroundBuffer->Pitch/4;
+		FGRow -= RenderLayers->ForegroundBuffer->Pitch/4;
+	}
+}
+
+
+internal void JoinBuffersSecondPass(render_layers *RenderLayers)
+{
+	uint32 *BGRow = (uint32 *)RenderLayers->BackgroundBuffer->StartOfBuffer;
+	BGRow += (RenderLayers->BackgroundBuffer->Pitch / 4) * (WINDOW_HEIGHT - 1);
+
+	uint32 *FGRow = (uint32 *)RenderLayers->ForegroundBuffer->StartOfBuffer;
+	FGRow += (RenderLayers->ForegroundBuffer->Pitch / 4) * (WINDOW_HEIGHT - 1);
+
+
+	for(int32 PixelY = 0; PixelY < WINDOW_HEIGHT; PixelY++)
+	{
+		uint32 *BGPixel = BGRow;
+		uint32 *FGPixel = FGRow;
+		for(int32 PixelX = 0; PixelX < WINDOW_WIDTH; PixelX++)
+		{
+
+			uint8 *PixelColour = (uint8 *)FGPixel++;
+			float32 Blue = *PixelColour++;
+			float32 Green = *PixelColour++;
+			float32 Red = *PixelColour++;
+			uint8 MaskValue = *PixelColour;
+
+			float32 Ratio = ((float32)MaskValue) / ((float32)0xFF);
+
+			int32 ResultBlue = RoundFloat32ToInt32(Blue * Ratio);
+			int32 ResultGreen = RoundFloat32ToInt32(Green * Ratio);
+			int32 ResultRed = RoundFloat32ToInt32(Red * Ratio);
+
+			uint32 NewColourValue = 
 			(
 				(0xFF << 24) |
 				(ResultRed << 16) |
 				(ResultGreen << 8) |
 				(ResultBlue << 0)
 			);
+
+			if(MaskValue)
+			{
+				*BGPixel = NewColourValue;
+			}
+
+			BGPixel++;
+			
+			// *BGPixel++ = 
+			// (
+			// 	(0xFF << 24) |
+			// 	(ResultRed << 16) |
+			// 	(ResultGreen << 8) |
+			// 	(ResultBlue << 0)
+			// );
 			
 		}
 		BGRow -= RenderLayers->BackgroundBuffer->Pitch/4;
