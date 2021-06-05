@@ -328,7 +328,7 @@ int32 CALLBACK WinMain
 
 		HWND Window = CreateWindowExA
 		(
-			0, 
+			WS_EX_LAYERED, 
 			WindowClass.lpszClassName, 
 			APP_NAME, 
 			WindowStyle, 
@@ -346,6 +346,23 @@ int32 CALLBACK WinMain
 		{
 			HDC DeviceContext = GetDC(Window);
 			GlobalRunning = true;
+
+			COLORREF rgbBlack =  0x00000000;
+
+			SetLayeredWindowAttributes
+			(
+				Window, 
+				rgbBlack,
+				0xFF,
+				LWA_COLORKEY
+			);
+
+			// BOOL SetLayeredWindowAttributes(
+			// HWND     hwnd,
+			// COLORREF crKey,
+			// BYTE     bAlpha,
+			// DWORD    dwFlags
+			// );
 
 			win32_offscreen_buffer Win32BackgroundBuffer = {};
 			win32_offscreen_buffer Win32ForegroundBuffer = {};
