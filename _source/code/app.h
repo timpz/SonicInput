@@ -91,12 +91,25 @@ struct app_memory
 
 struct offscreen_buffer
 {
-	void *BackgroundLayer;
-	void *ForegroundLayer;
+	void *StartOfBuffer;
 	int32 Width;
 	int32 Height;
 	int32 Pitch;
 	int32 BytesPerPixel;
+};
+
+struct render_layers
+{
+	uint32 NumberOfBuffers;
+	union
+	{
+		offscreen_buffer *BackBuffer[2];
+		struct
+		{
+			offscreen_buffer *BackgroundBuffer;
+			offscreen_buffer *ForegroundBuffer;
+		};
+	};
 };
 
 struct app_button_state

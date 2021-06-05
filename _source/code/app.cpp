@@ -281,29 +281,29 @@ internal void DrawDirection
 
 global float32 testvalue = 0.0f;
 
-internal void Render(offscreen_buffer *Buffer, app_memory *Memory)
+internal void Render(render_layers *RenderLayers, app_memory *Memory)
 {
 	app_state *AppState = (app_state *)Memory->PermanentStorage;
 	display_input *DisplayInput = &AppState->DisplayInput;
 
+	DrawRainbowHorizontal(RenderLayers->BackgroundBuffer, testvalue);
+	testvalue = ModuloFloat32(testvalue + 0.001f, 1.0f);
+
 	// Blank
-	// DrawRectangle(Buffer, 0, 0, WINDOW_WIDTH, WINDOW_HEIGHT, 1.0f, 0, 0);
+	DrawRectangle(RenderLayers->ForegroundBuffer, 0, 0, WINDOW_WIDTH, WINDOW_HEIGHT, 0, 0, 0);
 
-	// vector3 Colour = {0.5f, 0.7f, 0};
-	DrawCircle(Buffer, 20, 20, 10.0f, 0.5f, 0.7f, 0.3f, 0.5f);
+	DrawImage(RenderLayers->ForegroundBuffer, 10.0f, 10.0f, Dpad_Image);
+	DrawDirection(DisplayInput->Dpad, 10.0f, 10.0f, RenderLayers->ForegroundBuffer);
 
-	// DrawImage(Buffer, 10.0f, 10.0f, Dpad_Image);
-	// DrawButton(DisplayInput->A, 70.0f, 10.0f, A_Press, A_Button, Buffer);
-	// DrawButton(DisplayInput->B, 130.0f, 10.0f, B_Press, B_Button, Buffer);
-	// DrawButton(DisplayInput->C, 190.0f, 10.0f, C_Press, C_Button, Buffer);
+	if(DisplayInput->Start)
+	{
+		DrawImageOnTop(RenderLayers->ForegroundBuffer, 10.0f, 10.0f, S_Press);
+	}
+	
+	DrawButton(DisplayInput->A, 70.0f, 10.0f, A_Press, A_Button, RenderLayers->ForegroundBuffer);
+	DrawButton(DisplayInput->B, 130.0f, 10.0f, B_Press, B_Button, RenderLayers->ForegroundBuffer);
+	DrawButton(DisplayInput->C, 190.0f, 10.0f, C_Press, C_Button, RenderLayers->ForegroundBuffer);
 
-	// if(DisplayInput->Start)
-	// {
-	// 	DrawImageOnTop(Buffer, 10.0f, 10.0f, S_Press);
-	// }
+	JoinBuffers(RenderLayers);
 
-	// DrawDirection(DisplayInput->Dpad, 10.0f, 10.0f, Buffer);
-
-	// DrawRainbowHorizontal(Buffer, testvalue);
-	// testvalue = ModuloFloat32(testvalue + 0.001f, 1.0f);
 }

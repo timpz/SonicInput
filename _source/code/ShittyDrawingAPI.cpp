@@ -13,11 +13,8 @@ internal vector3 HSVtoRBG(float32 Hue, float32 Saturation, float32 Value)
 
 	float32 Chroma = Saturation * Value;
 	float32 HueIndex = Hue / (1.0f / 6.0f);
-	// HueIndex = HueIndex * HueIndex;
 	int32 HueIndexSelection = FloorFloat32ToInt32(HueIndex);
 	float32 VariableComponent = Chroma * (1.0f - AbsoluteFloat32(ModuloFloat32(HueIndex, 2.0f) - 1));
-	// VariableComponent = VariableComponent * VariableComponent;
-	// VariableComponent = sqrtf(VariableComponent);
 
 	vector3 Result = {};
 
@@ -81,38 +78,38 @@ struct clamped_area
 
 internal clamped_area ClampDrawingArea
 (
-	float32 XOffset, float32 YOffset, 
-	float32 XSize, float32 YSize
+	float32 OffsetX, float32 OffsetY, 
+	float32 SizeX, float32 SizeY
 )
 {
 	clamped_area Result = {};
 
-	if(XOffset < 0)
+	if(OffsetX < 0)
 	{
-		XSize += XOffset;
-		XOffset = 0;
+		SizeX += OffsetX;
+		OffsetX = 0;
 	}
 
-	if(YOffset < 0)
+	if(OffsetY < 0)
 	{
-		YSize += YOffset;
-		YOffset = 0;
+		SizeY += OffsetY;
+		OffsetY = 0;
 	}
 
-	if(XOffset + XSize >= WINDOW_WIDTH)
+	if(OffsetX + SizeX >= WINDOW_WIDTH)
 	{
-		XSize = WINDOW_WIDTH - XOffset;
+		SizeX = WINDOW_WIDTH - OffsetX;
 	}
 
-	if(YOffset + YSize >= WINDOW_HEIGHT)
+	if(OffsetY + SizeY >= WINDOW_HEIGHT)
 	{
-		YSize = WINDOW_HEIGHT - YOffset;
+		SizeY = WINDOW_HEIGHT - OffsetY;
 	}
 
-	Result.OffsetX = FloorFloat32ToInt32(XOffset);
-	Result.OffsetX  = FloorFloat32ToInt32(YOffset);
-	Result.SizeX  = FloorFloat32ToInt32(XSize);
-	Result.SizeY  = FloorFloat32ToInt32(YSize);
+	Result.OffsetX = FloorFloat32ToInt32(OffsetX);
+	Result.OffsetX  = FloorFloat32ToInt32(OffsetY);
+	Result.SizeX  = FloorFloat32ToInt32(SizeX);
+	Result.SizeY  = FloorFloat32ToInt32(SizeY);
 
 	return Result;
 }
@@ -124,7 +121,7 @@ internal void DrawRainbowHorizontal
 	float32 Offset
 )
 {
-	uint32 *Row = (uint32 *)Buffer->BackgroundLayer;
+	uint32 *Row = (uint32 *)Buffer->StartOfBuffer;
 	Row += (Buffer->Pitch / 4) * (WINDOW_HEIGHT - 1);
 
 	int32 XSizeInt = WINDOW_WIDTH;
@@ -170,7 +167,7 @@ internal void DrawRectangle
 {
 	clamped_area Clamp = ClampDrawingArea(OffsetX, OffsetY, SizeX, SizeY);
 
-	uint32 *Row = (uint32 *)Buffer->BackgroundLayer;
+	uint32 *Row = (uint32 *)Buffer->StartOfBuffer;
 
 	Row += Clamp.OffsetX;
 	Row += (Buffer->Pitch / 4) * (WINDOW_HEIGHT - 1 - Clamp.OffsetY);
@@ -206,7 +203,7 @@ internal void DrawRectangle
 {
 	clamped_area Clamp = ClampDrawingArea(OffsetX, OffsetY, SizeX, SizeY);
 
-	uint32 *Row = (uint32 *)Buffer->BackgroundLayer;
+	uint32 *Row = (uint32 *)Buffer->StartOfBuffer;
 
 	Row += Clamp.OffsetX;
 	Row += (Buffer->Pitch / 4) * (WINDOW_HEIGHT - 1 - Clamp.OffsetY);
@@ -251,7 +248,7 @@ internal void DrawRectangle
 internal void DrawImage
 (
 	offscreen_buffer *Buffer, 
-	float32 XOffset, float32 YOffset, 
+	float32 OffsetX, float32 OffsetY, 
 	uint8 *Image
 )
 {
@@ -267,23 +264,23 @@ internal void DrawImage
 	int32 StartY = 0;
 
 
-	if(XOffset < 0)
+	if(OffsetX < 0)
 	{
-		StartX -= RoundFloat32ToInt32(XOffset);
+		StartX -= RoundFloat32ToInt32(OffsetX);
 		Width -= StartX;
-		XOffset = 0;
+		OffsetX = 0;
 	}
 
-	if(YOffset < 0)
+	if(OffsetY < 0)
 	{
-		StartY -= RoundFloat32ToInt32(YOffset);
+		StartY -= RoundFloat32ToInt32(OffsetY);
 		Height -= StartY;
-		YOffset = 0;
+		OffsetY = 0;
 	}
 
-	if(XOffset + Width >= WINDOW_WIDTH)
+	if(OffsetX + Width >= WINDOW_WIDTH)
 	{
-		Width -= (RoundFloat32ToInt32(XOffset) + Width) - WINDOW_WIDTH;
+		Width -= (RoundFloat32ToInt32(OffsetX) + Width) - WINDOW_WIDTH;
 		if(Width < 0)
 		{
 			Width = 0;
@@ -291,9 +288,9 @@ internal void DrawImage
 
 	}
 
-	if(YOffset + Height >= WINDOW_HEIGHT)
+	if(OffsetY + Height >= WINDOW_HEIGHT)
 	{
-		Height -= (RoundFloat32ToInt32(YOffset) + Height) - WINDOW_HEIGHT;
+		Height -= (RoundFloat32ToInt32(OffsetY) + Height) - WINDOW_HEIGHT;
 		if(Height < 0)
 		{
 			Height = 0;
@@ -301,10 +298,10 @@ internal void DrawImage
 
 	}
 
-	int32 XOffsetInt = RoundFloat32ToInt32(XOffset);
-	int32 YOffsetInt = RoundFloat32ToInt32(YOffset);
+	int32 XOffsetInt = RoundFloat32ToInt32(OffsetX);
+	int32 YOffsetInt = RoundFloat32ToInt32(OffsetY);
 
-	uint32 *Row = (uint32 *)Buffer->BackgroundLayer;
+	uint32 *Row = (uint32 *)Buffer->StartOfBuffer;
 
 	Row += XOffsetInt;
 	Row += (Buffer->Pitch / 4) * (WINDOW_HEIGHT - 1 - YOffsetInt);
@@ -342,7 +339,7 @@ internal void DrawImage
 internal void DrawImageOnTop
 (
 	offscreen_buffer *Buffer, 
-	float32 XOffset, float32 YOffset, 
+	float32 OffsetX, float32 OffsetY, 
 	uint8 *Image
 )
 {
@@ -358,23 +355,23 @@ internal void DrawImageOnTop
 	int32 StartY = 0;
 
 
-	if(XOffset < 0)
+	if(OffsetX < 0)
 	{
-		StartX -= RoundFloat32ToInt32(XOffset);
+		StartX -= RoundFloat32ToInt32(OffsetX);
 		Width -= StartX;
-		XOffset = 0;
+		OffsetX = 0;
 	}
 
-	if(YOffset < 0)
+	if(OffsetY < 0)
 	{
-		StartY -= RoundFloat32ToInt32(YOffset);
+		StartY -= RoundFloat32ToInt32(OffsetY);
 		Height -= StartY;
-		YOffset = 0;
+		OffsetY = 0;
 	}
 
-	if(XOffset + Width >= WINDOW_WIDTH)
+	if(OffsetX + Width >= WINDOW_WIDTH)
 	{
-		Width -= (RoundFloat32ToInt32(XOffset) + Width) - WINDOW_WIDTH;
+		Width -= (RoundFloat32ToInt32(OffsetX) + Width) - WINDOW_WIDTH;
 		if(Width < 0)
 		{
 			Width = 0;
@@ -382,9 +379,9 @@ internal void DrawImageOnTop
 
 	}
 
-	if(YOffset + Height >= WINDOW_HEIGHT)
+	if(OffsetY + Height >= WINDOW_HEIGHT)
 	{
-		Height -= (RoundFloat32ToInt32(YOffset) + Height) - WINDOW_HEIGHT;
+		Height -= (RoundFloat32ToInt32(OffsetY) + Height) - WINDOW_HEIGHT;
 		if(Height < 0)
 		{
 			Height = 0;
@@ -392,10 +389,10 @@ internal void DrawImageOnTop
 
 	}
 
-	int32 XOffsetInt = RoundFloat32ToInt32(XOffset);
-	int32 YOffsetInt = RoundFloat32ToInt32(YOffset);
+	int32 XOffsetInt = RoundFloat32ToInt32(OffsetX);
+	int32 YOffsetInt = RoundFloat32ToInt32(OffsetY);
 
-	uint32 *Row = (uint32 *)Buffer->BackgroundLayer;
+	uint32 *Row = (uint32 *)Buffer->StartOfBuffer;
 
 	Row += XOffsetInt;
 	Row += (Buffer->Pitch / 4) * (WINDOW_HEIGHT - 1 - YOffsetInt);
@@ -440,14 +437,14 @@ internal void DrawImageOnTop
 internal void DrawCircle
 (
 	offscreen_buffer *Buffer, 
-	float32 XOffset, float32 YOffset, float32 Radius, 
+	float32 OffsetX, float32 OffsetY, float32 Radius, 
 	float32 Red, float32 Green, float32 Blue
 )
 {
-	int32 LowerBoundX = RoundFloat32ToInt32(XOffset - Radius);
-	int32 UpperBoundX = RoundFloat32ToInt32(XOffset + Radius);
-	int32 LowerBoundY = RoundFloat32ToInt32(YOffset - Radius);
-	int32 UpperBoundY = RoundFloat32ToInt32(YOffset + Radius);
+	int32 LowerBoundX = RoundFloat32ToInt32(OffsetX - Radius);
+	int32 UpperBoundX = RoundFloat32ToInt32(OffsetX + Radius);
+	int32 LowerBoundY = RoundFloat32ToInt32(OffsetY - Radius);
+	int32 UpperBoundY = RoundFloat32ToInt32(OffsetY + Radius);
 
 	if(LowerBoundX < 0)
 	{
@@ -469,7 +466,7 @@ internal void DrawCircle
 		UpperBoundY = WINDOW_HEIGHT;
 	}
 
-	uint32 *Row = (uint32 *)Buffer->BackgroundLayer;
+	uint32 *Row = (uint32 *)Buffer->StartOfBuffer;
 	Row += LowerBoundX;
 	Row += (Buffer->Pitch / 4) * (WINDOW_HEIGHT - 1 - LowerBoundY);
 
@@ -487,8 +484,8 @@ internal void DrawCircle
 		for(int32 PixelX = LowerBoundX; PixelX < UpperBoundX; PixelX++)
 		{
 
-			float32 RelativePixelX = PixelX - XOffset;
-			float32 RelativePixelY = PixelY - YOffset;
+			float32 RelativePixelX = PixelX - OffsetX;
+			float32 RelativePixelY = PixelY - OffsetY;
 
 			float32 Hypothenuse = RootFloat32((float32)(RelativePixelX * RelativePixelX + RelativePixelY * RelativePixelY));
 			if(Hypothenuse <= Radius)
@@ -505,14 +502,14 @@ internal void DrawCircle
 internal void DrawCircle
 (
 	offscreen_buffer *Buffer, 
-	float32 XOffset, float32 YOffset, float32 Radius, 
+	float32 OffsetX, float32 OffsetY, float32 Radius, 
 	vector3 Colour
 )
 {
-	int32 LowerBoundX = RoundFloat32ToInt32(XOffset - Radius);
-	int32 UpperBoundX = RoundFloat32ToInt32(XOffset + Radius);
-	int32 LowerBoundY = RoundFloat32ToInt32(YOffset - Radius);
-	int32 UpperBoundY = RoundFloat32ToInt32(YOffset + Radius);
+	int32 LowerBoundX = RoundFloat32ToInt32(OffsetX - Radius);
+	int32 UpperBoundX = RoundFloat32ToInt32(OffsetX + Radius);
+	int32 LowerBoundY = RoundFloat32ToInt32(OffsetY - Radius);
+	int32 UpperBoundY = RoundFloat32ToInt32(OffsetY + Radius);
 
 	if(LowerBoundX < 0)
 	{
@@ -534,7 +531,7 @@ internal void DrawCircle
 		UpperBoundY = WINDOW_HEIGHT;
 	}
 
-	uint32 *Row = (uint32 *)Buffer->BackgroundLayer;
+	uint32 *Row = (uint32 *)Buffer->StartOfBuffer;
 	Row += LowerBoundX;
 	Row += (Buffer->Pitch / 4) * (WINDOW_HEIGHT - 1 - LowerBoundY);
 
@@ -552,8 +549,8 @@ internal void DrawCircle
 		for(int32 PixelX = LowerBoundX; PixelX < UpperBoundX; PixelX++)
 		{
 
-			float32 RelativePixelX = PixelX - XOffset;
-			float32 RelativePixelY = PixelY - YOffset;
+			float32 RelativePixelX = PixelX - OffsetX;
+			float32 RelativePixelY = PixelY - OffsetY;
 
 			float32 Hypothenuse = RootFloat32((float32)(RelativePixelX * RelativePixelX + RelativePixelY * RelativePixelY));
 			if(Hypothenuse <= Radius)
@@ -574,45 +571,40 @@ internal void DrawCircle
 	float32 Red, float32 Green, float32 Blue, float32 Alpha
 )
 {
-	// int32 LowerBoundX = RoundFloat32ToInt32(XOffset - Radius);
-	// int32 UpperBoundX = RoundFloat32ToInt32(XOffset + Radius);
-	// int32 LowerBoundY = RoundFloat32ToInt32(YOffset - Radius);
-	// int32 UpperBoundY = RoundFloat32ToInt32(YOffset + Radius);
+	int32 LowerBoundX = RoundFloat32ToInt32(OffsetX - Radius);
+	int32 UpperBoundX = RoundFloat32ToInt32(OffsetX + Radius);
+	int32 LowerBoundY = RoundFloat32ToInt32(OffsetY - Radius);
+	int32 UpperBoundY = RoundFloat32ToInt32(OffsetY + Radius);
 
-	clamped_area Clamp = ClampDrawingArea
-	(
-		OffsetX - Radius, OffsetY - Radius, 
-		OffsetX + Radius, OffsetY + Radius
-	);
 
-	// if(LowerBoundX < 0)
-	// {
-	// 	LowerBoundX = 0;
-	// }
+	if(LowerBoundX < 0)
+	{
+		LowerBoundX = 0;
+	}
 
-	// if(LowerBoundY < 0)
-	// {
-	// 	LowerBoundY = 0;
-	// }
+	if(LowerBoundY < 0)
+	{
+		LowerBoundY = 0;
+	}
 
-	// if(UpperBoundX >= WINDOW_WIDTH)
-	// {
-	// 	UpperBoundX = WINDOW_WIDTH;
-	// }
+	if(UpperBoundX >= WINDOW_WIDTH)
+	{
+		UpperBoundX = WINDOW_WIDTH;
+	}
 
-	// if(UpperBoundY >= WINDOW_HEIGHT)
-	// {
-	// 	UpperBoundY = WINDOW_HEIGHT;
-	// }
+	if(UpperBoundY >= WINDOW_HEIGHT)
+	{
+		UpperBoundY = WINDOW_HEIGHT;
+	}
 
-	uint32 *Row = (uint32 *)Buffer->BackgroundLayer;
-	Row += Clamp.OffsetX;
-	Row += (Buffer->Pitch / 4) * (WINDOW_HEIGHT - 1 - Clamp.OffsetY);
+	uint32 *Row = (uint32 *)Buffer->StartOfBuffer;
+	Row += LowerBoundX;
+	Row += (Buffer->Pitch / 4) * (WINDOW_HEIGHT - 1 - UpperBoundY);
 
-	for(int32 PixelY = Clamp.OffsetY; PixelY < Clamp.SizeY; PixelY++)
+	for(int32 PixelY = LowerBoundY; PixelY < UpperBoundY; PixelY++)
 	{
 		uint32 *Pixel = Row;
-		for(int32 PixelX = Clamp.OffsetX; PixelX < Clamp.SizeX; PixelX++)
+		for(int32 PixelX = LowerBoundX; PixelX < UpperBoundX; PixelX++)
 		{
 
 			float32 RelativePixelX = PixelX - OffsetX;
@@ -644,5 +636,47 @@ internal void DrawCircle
 			Pixel++;
 		}
 		Row -= Buffer->Pitch/4;
+	}
+}
+
+internal void JoinBuffers(render_layers *RenderLayers)
+{
+	uint32 *BGRow = (uint32 *)RenderLayers->BackgroundBuffer->StartOfBuffer;
+	BGRow += (RenderLayers->BackgroundBuffer->Pitch / 4) * (WINDOW_HEIGHT - 1);
+
+	uint32 *FGRow = (uint32 *)RenderLayers->ForegroundBuffer->StartOfBuffer;
+	FGRow += (RenderLayers->ForegroundBuffer->Pitch / 4) * (WINDOW_HEIGHT - 1);
+
+
+	for(int32 PixelY = 0; PixelY < WINDOW_HEIGHT; PixelY++)
+	{
+		uint32 *BGPixel = BGRow;
+		uint32 *FGPixel = FGRow;
+		for(int32 PixelX = 0; PixelX < WINDOW_WIDTH; PixelX++)
+		{
+
+			uint8 *PixelColour = (uint8 *)BGPixel;
+			float32 Blue = *PixelColour++;
+			float32 Green = *PixelColour++;
+			float32 Red = *PixelColour;
+
+			uint8 MaskValue = *(uint8 *)FGPixel++;
+			float32 Ratio = ((float32)MaskValue) / ((float32)0xFF);
+
+			int32 ResultBlue = RoundFloat32ToInt32(Blue * Ratio);
+			int32 ResultGreen = RoundFloat32ToInt32(Green * Ratio);
+			int32 ResultRed = RoundFloat32ToInt32(Red * Ratio);
+			
+			*BGPixel++ = 
+			(
+				(0xFF << 24) |
+				(ResultRed << 16) |
+				(ResultGreen << 8) |
+				(ResultBlue << 0)
+			);
+			
+		}
+		BGRow -= RenderLayers->BackgroundBuffer->Pitch/4;
+		FGRow -= RenderLayers->ForegroundBuffer->Pitch/4;
 	}
 }

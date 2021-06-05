@@ -347,21 +347,31 @@ int32 CALLBACK WinMain
 			HDC DeviceContext = GetDC(Window);
 			GlobalRunning = true;
 
-			win32_offscreen_buffer BackgroundBuffer = {};
-			win32_offscreen_buffer ForegroundBuffer = {};
+			win32_offscreen_buffer Win32BackgroundBuffer = {};
+			win32_offscreen_buffer Win32ForegroundBuffer = {};
 
-			Win32GlobalBackBuffer = &BackgroundBuffer;
+			Win32GlobalBackBuffer = &Win32BackgroundBuffer;
 
-			Win32ResizeDIB(&BackgroundBuffer, WINDOW_WIDTH, WINDOW_HEIGHT);
-			Win32ResizeDIB(&ForegroundBuffer, WINDOW_WIDTH, WINDOW_HEIGHT);
+			Win32ResizeDIB(&Win32BackgroundBuffer, WINDOW_WIDTH, WINDOW_HEIGHT);
+			Win32ResizeDIB(&Win32ForegroundBuffer, WINDOW_WIDTH, WINDOW_HEIGHT);
 
-			offscreen_buffer AppBuffer = {};
-			AppBuffer.BytesPerPixel = BackgroundBuffer.BytesPerPixel;
-			AppBuffer.Height = BackgroundBuffer.Height;
-			AppBuffer.Width = BackgroundBuffer.Width;
-			AppBuffer.Pitch = BackgroundBuffer.Pitch;
-			AppBuffer.BackgroundLayer = BackgroundBuffer.Memory;
-			AppBuffer.ForegroundLayer = ForegroundBuffer.Memory;
+			offscreen_buffer BackgroundBuffer = {};
+			BackgroundBuffer.BytesPerPixel = Win32BackgroundBuffer.BytesPerPixel;
+			BackgroundBuffer.Height = Win32BackgroundBuffer.Height;
+			BackgroundBuffer.Width = Win32BackgroundBuffer.Width;
+			BackgroundBuffer.Pitch = Win32BackgroundBuffer.Pitch;
+			BackgroundBuffer.StartOfBuffer = Win32BackgroundBuffer.Memory;
+
+			// This is only safe because the foreground and background are identical size
+			offscreen_buffer ForegroundBuffer = BackgroundBuffer;
+			ForegroundBuffer.StartOfBuffer = Win32ForegroundBuffer.Memory;
+
+			render_layers RenderLayers = {};
+			RenderLayers.NumberOfBuffers = 2;
+			RenderLayers.BackBuffer[0] = &BackgroundBuffer;
+			RenderLayers.BackBuffer[1] = &ForegroundBuffer;
+			
+			// AppBuffer.ForegroundLayer = ForegroundBuffer.Memory;
 
 
 			input *NewInput = &DeviceInputs[0];
@@ -430,11 +440,11 @@ int32 CALLBACK WinMain
 				ProcessDInput(DInputDevice, DInputController);
 
 				Update(DeviceInputs, &AppMemory);
-				Render(&AppBuffer, &AppMemory);
+				Render(&RenderLayers, &AppMemory);
 
 				Win32DisplayBufferInWindow
 				(
-					&BackgroundBuffer, DeviceContext,
+					&Win32BackgroundBuffer, DeviceContext,
 					WINDOW_WIDTH, WINDOW_HEIGHT
 				);
 

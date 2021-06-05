@@ -6,6 +6,43 @@ inline float32 Sine(float32 Angle)
 	return Result;
 }
 
+inline float32 ClampFloat32(float32 Value, float32 ClampingValue, bool32 UpperClamp)
+{
+	float32 Result = 0;
+
+	if(UpperClamp)
+	{
+		if(Value > ClampingValue)
+		{ Result = ClampingValue; }
+		else
+		{ Result = Value; }
+	} else
+	{
+		if(Value < ClampingValue)
+		{ Result = ClampingValue; }
+		else
+		{ Result = Value; }
+	}
+
+	return Result;
+}
+
+inline float32 ClampFloat32(float32 Value, float32 LowerBound, float32 UpperBound)
+{
+	Assert(LowerBound < UpperBound);
+	float Result = 0;
+	
+	if(Value < LowerBound) 
+	{ Result = LowerBound; }
+	else if(Value > UpperBound) 
+	{ Result = UpperBound; }
+	else 
+	{ Result = Value; }
+
+	return Value;
+}
+
+
 inline int32 FloorFloat32ToInt32(float32 Float32)
 {
 	int32 Result = (int32)floorf(Float32);
