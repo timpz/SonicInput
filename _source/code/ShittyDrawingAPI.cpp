@@ -121,7 +121,6 @@ inline float32 CalculateSideOfDot(vector2 Dot, vector2 VerticeFrom, vector2 Vert
 	// http://totologic.blogspot.com/2014/01/accurate-point-in-triangle-test.html
 
 }
-}
 
 internal void DrawTriangle(offscreen_buffer *Buffer, vector2 PosA, vector2 PosB, vector2 PosC, vector3 Colour)
 {
