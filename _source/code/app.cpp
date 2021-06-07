@@ -341,7 +341,7 @@ inline int32 ButtonCircleCount(int32 CurrentCount, app_button_state Button)
 
 	return Result;
 }
-
+// comment
 internal void Render(render_layers *RenderLayers, app_memory *Memory)
 {
 	app_state *AppState = (app_state *)Memory->PermanentStorage;

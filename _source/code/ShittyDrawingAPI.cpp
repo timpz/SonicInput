@@ -195,7 +195,6 @@ internal void DrawRainbowHorizontal
 		{
 
 			float32 XValue = ModuloFloat32(Offset + (float32)X / ((float32)WINDOW_WIDTH), 1.0f);
-			
 			vector3 Colours = HSVtoRBG(XValue, 1, 1);
 
 			float32 Red = Colours.X;
