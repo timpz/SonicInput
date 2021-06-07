@@ -4,6 +4,7 @@
 //----------------------------------//
 
 
+#include "timpz_logo.h"
 #include "A_Button.h"
 #include "B_Button.h"
 #include "C_Button.h"
@@ -12,6 +13,7 @@
 #include "C_Press.h"
 #include "S_Press.h"
 #include "Dpad.h"
+#include "DpadInner.h"
 #include "Direction_1.h"
 #include "Direction_2.h"
 #include "Direction_3.h"

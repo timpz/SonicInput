@@ -315,6 +315,33 @@ internal void DrawDirection
 
 global float32 testvalue = 0.0f;
 
+// global int32 CircleValueStart = 0;
+// global int32 CircleValueA = 0;
+// global int32 CircleValueB = 0;
+// global int32 CircleValueC = 0;
+global int32 CircleCountStart = 0;
+global int32 CircleCountA = 0;
+global int32 CircleCountB = 0;
+global int32 CircleCountC = 0;
+
+inline int32 ButtonCircleCount(int32 CurrentCount, app_button_state Button)
+{
+	int32 CountCap = 10;
+	int32 Result;
+
+	if(Button.IsDown)
+	{
+		Result = Button.HeldDownCount;
+	} else
+	{
+		Result = CurrentCount - 2;
+	}
+	if(Result > CountCap){ Result = CountCap; }
+	if(Result < 0){ Result = 0; }
+
+	return Result;
+}
+
 internal void Render(render_layers *RenderLayers, app_memory *Memory)
 {
 	app_state *AppState = (app_state *)Memory->PermanentStorage;
@@ -325,10 +352,13 @@ internal void Render(render_layers *RenderLayers, app_memory *Memory)
 
 
 	// Blank
-	DrawRectangle(RenderLayers->ForegroundBuffer, 0, 0, WINDOW_WIDTH, WINDOW_HEIGHT, 0, 0, 0);
+	DrawRectangle(RenderLayers->ForegroundBuffer, 0, 0, WINDOW_WIDTH, WINDOW_HEIGHT, TRANSPARENT_COLOUR, 1.0f);
+
+	float32 LogoBottom = 5.0f;
+	DrawImage(RenderLayers->ForegroundBuffer, 10, LogoBottom, timpz_logo);
 
 	float32 ButtonLeft = 10.0f;
-	float32 ButtonBottom = 10.0f;
+	float32 ButtonBottom = LogoBottom + 85.0f;
 	float32 ButtonDistanceBetween = 60.0f;
 
 	float32 ButtonSide = 56.0f;
@@ -345,27 +375,33 @@ internal void Render(render_layers *RenderLayers, app_memory *Memory)
 	{
 		DrawImageOnTop(RenderLayers->ForegroundBuffer, ButtonLeftStart, ButtonBottom, S_Press);
 	}
-	
-	
 
 	DrawButton(DisplayInput->A.IsDown, ButtonLeftA, ButtonBottom, A_Press, A_Button, RenderLayers->ForegroundBuffer);
 	DrawButton(DisplayInput->B.IsDown, ButtonLeftB, ButtonBottom, B_Press, B_Button, RenderLayers->ForegroundBuffer);
 	DrawButton(DisplayInput->C.IsDown, ButtonLeftC, ButtonBottom, C_Press, C_Button, RenderLayers->ForegroundBuffer);
 
+
 	JoinBuffersFirstPass(RenderLayers);
 
-	DrawRectangle(RenderLayers->BackgroundBuffer, 0, 0, WINDOW_WIDTH, WINDOW_HEIGHT, 0.0f, 0.0f, 0.0f);
+	DrawRectangle(RenderLayers->BackgroundBuffer, 0, 0, WINDOW_WIDTH, WINDOW_HEIGHT, TRANSPARENT_COLOUR, 1.0f);
 
-	vector3 CircleColour = {0.01f, 0.01f, 0.01f};
+	DrawImage(RenderLayers->BackgroundBuffer, ButtonLeftStart, ButtonBottom, DpadInner_Image);
+
+	vector3 CircleColour = {0, 0, 0};
 
 	float32 MinCircle = 27.5f;
 	float32 MaxCircle = 35.0f;
 	float32 SpeedMultiplier = 0.5f;
 
-	float32 CurrentCircleStart = MinCircle - 1.0f + DisplayInput->Start.HeldDownCount*SpeedMultiplier;
-	float32 CurrentCircleA = MinCircle + DisplayInput->A.HeldDownCount*SpeedMultiplier;
-	float32 CurrentCircleB = MinCircle + DisplayInput->B.HeldDownCount*SpeedMultiplier;
-	float32 CurrentCircleC = MinCircle + DisplayInput->C.HeldDownCount*SpeedMultiplier;
+	CircleCountStart = ButtonCircleCount(CircleCountStart, DisplayInput->Start);
+	CircleCountA = ButtonCircleCount(CircleCountA, DisplayInput->A);
+	CircleCountB = ButtonCircleCount(CircleCountB, DisplayInput->B);
+	CircleCountC = ButtonCircleCount(CircleCountC, DisplayInput->C);
+
+	float32 CurrentCircleStart = MinCircle - 1.0f + CircleCountStart*SpeedMultiplier*1.2f;
+	float32 CurrentCircleA = MinCircle + CircleCountA*SpeedMultiplier;
+	float32 CurrentCircleB = MinCircle + CircleCountB*SpeedMultiplier;
+	float32 CurrentCircleC = MinCircle + CircleCountC*SpeedMultiplier;
 
 	if(CurrentCircleStart > MaxCircle){ CurrentCircleStart = MaxCircle; }
 	CurrentCircleStart = LinerarInterpolationCubed(CurrentCircleStart, MinCircle, MaxCircle);
@@ -379,33 +415,11 @@ internal void Render(render_layers *RenderLayers, app_memory *Memory)
 	if(CurrentCircleC > MaxCircle){ CurrentCircleC = MaxCircle; }
 	CurrentCircleC = LinerarInterpolationCubed(CurrentCircleC, MinCircle, MaxCircle);
 
-	// DrawRectangle(RenderLayers->BackgroundBuffer, ButtonLeftStart + 11.0f, ButtonBottom + 11.0f, ButtonSide - 22.0f, ButtonSide - 22.0f, 0.01f, 0.01f, 0.01f);
-	// DrawCircle(RenderLayers->BackgroundBuffer, ButtonLeftStart + ButtonSide/2, ButtonBottom + ButtonSide/2, CurrentCircleStart, CircleColour);
-	
-	// DrawTriangle
-	// (
-	// 	RenderLayers->BackgroundBuffer, 
-	// 	{0, 0}, 
-	// 	{10, 10}, 
-	// 	{10, 10}, 
-	// 	{0.01f, 0.01f, 0.01f}
-	// );
-	
-	DrawTriangle
-	(
-		RenderLayers->BackgroundBuffer, 
-		{ButtonLeftStart + 11.0f, 			   ButtonBottom + 11.0f}, 
-		{ButtonLeftStart + ButtonSide - 11.0f, ButtonBottom + 11.0f}, 
-		{ButtonLeftStart + ButtonSide - 11.0f, ButtonBottom + ButtonSide - 11.0f}, 
-		{0.01f, 0.01f, 0.01f}
-	);
+	DrawCircle(RenderLayers->BackgroundBuffer, ButtonLeftStart + ButtonSide/2, ButtonBottom + ButtonSide/2, CurrentCircleStart, CircleColour);
 
 	DrawCircle(RenderLayers->BackgroundBuffer, ButtonLeftA + ButtonSide/2, ButtonBottom + ButtonSide/2, CurrentCircleA, CircleColour);
 	DrawCircle(RenderLayers->BackgroundBuffer, ButtonLeftB + ButtonSide/2, ButtonBottom + ButtonSide/2, CurrentCircleB, CircleColour);
 	DrawCircle(RenderLayers->BackgroundBuffer, ButtonLeftC + ButtonSide/2, ButtonBottom + ButtonSide/2, CurrentCircleC, CircleColour);
 	
-
-
 	JoinBuffersSecondPass(RenderLayers);
-
 }

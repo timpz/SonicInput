@@ -349,8 +349,8 @@ int32 CALLBACK WinMain
 
 			// COLORREF MaskingColour =  0x00FEFEFEFE;
 			// COLORREF MaskingColour =  0x00FFFFFFFF;
-			COLORREF MaskingColour =  0x00000000;
-			// COLORREF MaskingColour =  0x00010101;
+			// COLORREF MaskingColour =  0x00000000;
+			COLORREF MaskingColour =  TRANSPARENT_COLOUR;
 
 			SetLayeredWindowAttributes
 			(

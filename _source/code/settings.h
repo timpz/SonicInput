@@ -1,7 +1,7 @@
 #ifndef SETTINGS_H
 
 #define WINDOW_WIDTH 256
-#define WINDOW_HEIGHT 76
+#define WINDOW_HEIGHT 160
 
 #define WINDOW_POSX 50
 #define WINDOW_POSY 50
@@ -11,6 +11,9 @@
 #define APP_NAME "SonicInput"
 
 #define INPUT_DEVICE 0
+
+#define TRANSPARENT_COLOUR 0x00010101
+// #define TRANSPARENT_COLOUR 0x00000000
 
 #define SETTINGS_H
 #endif

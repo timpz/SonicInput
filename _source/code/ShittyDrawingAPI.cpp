@@ -218,39 +218,39 @@ internal void DrawRainbowHorizontal
 
 }
 
-internal void DrawRectangle
-(
-	offscreen_buffer *Buffer, 
-	float32 OffsetX, float32 OffsetY, 
-	float32 SizeX, float32 SizeY, 
-	float32 Red, float32 Green, float32 Blue
-)
-{
-	clamped_area Clamp = ClampDrawingArea(OffsetX, OffsetY, SizeX, SizeY);
+// internal void DrawRectangle
+// (
+// 	offscreen_buffer *Buffer, 
+// 	float32 OffsetX, float32 OffsetY, 
+// 	float32 SizeX, float32 SizeY, 
+// 	float32 Red, float32 Green, float32 Blue
+// )
+// {
+// 	clamped_area Clamp = ClampDrawingArea(OffsetX, OffsetY, SizeX, SizeY);
 
-	uint32 *Row = (uint32 *)Buffer->StartOfBuffer;
+// 	uint32 *Row = (uint32 *)Buffer->StartOfBuffer;
 
-	Row += Clamp.OffsetX;
-	Row += (Buffer->Pitch / 4) * (WINDOW_HEIGHT - 1 - Clamp.OffsetY);
+// 	Row += Clamp.OffsetX;
+// 	Row += (Buffer->Pitch / 4) * (WINDOW_HEIGHT - 1 - Clamp.OffsetY);
 
-	uint32 PixelColour = 
-	(
-		(0xFF << 24) |
-		(RoundFloat32ToUInt32(255.0f * Red) << 16)|
-		(RoundFloat32ToUInt32(255.0f * Green) << 8)|
-		(RoundFloat32ToUInt32(255.0f * Blue) << 0)
-	);
+// 	uint32 PixelColour = 
+// 	(
+// 		(0xFF << 24) |
+// 		(RoundFloat32ToUInt32(255.0f * Red) << 16)|
+// 		(RoundFloat32ToUInt32(255.0f * Green) << 8)|
+// 		(RoundFloat32ToUInt32(255.0f * Blue) << 0)
+// 	);
 
-	for (int32 Y = 0; Y < Clamp.SizeY; ++Y)
-	{
-		uint32 *Pixel = Row;
-		for(int32 X = 0; X < Clamp.SizeX; ++X)
-		{
-			*Pixel++ = PixelColour;
-		}
-		Row -= Buffer->Pitch/4;
-	}
-}
+// 	for (int32 Y = 0; Y < Clamp.SizeY; ++Y)
+// 	{
+// 		uint32 *Pixel = Row;
+// 		for(int32 X = 0; X < Clamp.SizeX; ++X)
+// 		{
+// 			*Pixel++ = PixelColour;
+// 		}
+// 		Row -= Buffer->Pitch/4;
+// 	}
+// }
 
 
 // NOTE: Drawing with alpha is much slower since we need to blend with the existing background
@@ -269,38 +269,95 @@ internal void DrawRectangle
 	Row += Clamp.OffsetX;
 	Row += (Buffer->Pitch / 4) * (WINDOW_HEIGHT - 1 - Clamp.OffsetY);
 
-	for (int32 Y = 0; Y < Clamp.SizeY; ++Y)
+	if(Alpha >= 1.0f)
 	{
-		uint32 *Pixel = Row;
-		for(int32 X = 0; X < Clamp.SizeX; ++X)
+		uint32 PixelColour = 
+		(
+			(0xFF << 24) |
+			(RoundFloat32ToUInt32(255.0f * Red) << 16)|
+			(RoundFloat32ToUInt32(255.0f * Green) << 8)|
+			(RoundFloat32ToUInt32(255.0f * Blue) << 0)
+		);
+
+		for (int32 Y = 0; Y < Clamp.SizeY; ++Y)
 		{
-			uint8 *Colour = (uint8 *)Pixel;
-			float32 DestBlue = (float32)*Colour++;
-			float32 DestGreen = (float32)*Colour++;
-			float32 DestRed = (float32)*Colour;
-
-			float32 Ratio = (float32)Alpha / 1.0f; 
-
-			int32 ResultRed = RoundFloat32ToInt32(DestRed*(1-Ratio) + 255.0f * Red*Ratio);
-			int32 ResultGreen = RoundFloat32ToInt32(DestGreen*(1-Ratio) + 255.0f * Green*Ratio);
-			int32 ResultBlue = RoundFloat32ToInt32(DestBlue*(1-Ratio) + 255.0f * Blue*Ratio);
-
-			*Pixel++ = 
-			(
-				(0xFF << 24) |
-				(ResultRed << 16) |
-				(ResultGreen << 8) |
-				(ResultBlue << 0)
-			);
+			uint32 *Pixel = Row;
+			for(int32 X = 0; X < Clamp.SizeX; ++X)
+			{
+				*Pixel++ = PixelColour;
+			}
+			Row -= Buffer->Pitch/4;
 		}
-		Row -= Buffer->Pitch/4;
+	} else
+	{
+		for (int32 Y = 0; Y < Clamp.SizeY; ++Y)
+		{
+			uint32 *Pixel = Row;
+			for(int32 X = 0; X < Clamp.SizeX; ++X)
+			{
+				uint8 *Colour = (uint8 *)Pixel;
+				float32 DestBlue = (float32)*Colour++;
+				float32 DestGreen = (float32)*Colour++;
+				float32 DestRed = (float32)*Colour;
+
+				float32 Ratio = (float32)Alpha / 1.0f; 
+
+				int32 ResultRed = RoundFloat32ToInt32(DestRed*(1-Ratio) + 255.0f * Red*Ratio);
+				int32 ResultGreen = RoundFloat32ToInt32(DestGreen*(1-Ratio) + 255.0f * Green*Ratio);
+				int32 ResultBlue = RoundFloat32ToInt32(DestBlue*(1-Ratio) + 255.0f * Blue*Ratio);
+
+				*Pixel++ = 
+				(
+					(0xFF << 24) |
+					(ResultRed << 16) |
+					(ResultGreen << 8) |
+					(ResultBlue << 0)
+				);
+			}
+			Row -= Buffer->Pitch/4;
+		}
 	}
 }
 
+internal void DrawRectangle
+(
+	offscreen_buffer *Buffer, 
+	float32 OffsetX, float32 OffsetY, 
+	float32 SizeX, float32 SizeY, 
+	uint8 Red, uint8 Green, uint8 Blue, uint8 Alpha
+)
+{
+	float32 RedFloat32 = Red / 255.0f;
+	float32 GreenFloat32 = Green / 255.0f;
+	float32 BlueFloat32 = Blue / 255.0f;
+	float32 AlphaFloat32 = Alpha / 255.0f;
 
+	DrawRectangle
+	(
+		Buffer, OffsetX, OffsetY, SizeX, SizeY,
+		RedFloat32, GreenFloat32, BlueFloat32, AlphaFloat32
+	);
+}
 
+internal void DrawRectangle
+(
+	offscreen_buffer *Buffer, 
+	float32 OffsetX, float32 OffsetY, 
+	float32 SizeX, float32 SizeY, 
+	uint32 Colour, float32 Alpha
+)
+{
+	// float32 AlphaFloat32 = (float32)((Colour & 0xFF000000) >> 24) / 255.0f;
+	float32 RedFloat32 = (float32)((Colour & 0xFF0000) >> 16) / 255.0f;
+	float32 GreenFloat32 = (float32)((Colour & 0xFF00) >> 8) / 255.0f;
+	float32 BlueFloat32 = (float32)(Colour & 0xFF) / 255.0f;
 
-
+	DrawRectangle
+	(
+		Buffer, OffsetX, OffsetY, SizeX, SizeY,
+		RedFloat32, GreenFloat32, BlueFloat32, Alpha
+	);
+}
 
 
 
@@ -395,7 +452,97 @@ internal void DrawImage
 	}
 
 }
+#if 0
+internal void DrawImageInverted
+(
+	offscreen_buffer *Buffer, 
+	float32 OffsetX, float32 OffsetY, 
+	uint8 *Image
+)
+{
 
+	int32 Width = *(int32 *)Image;
+	int32 Height = *(int32 *)(Image+4);
+
+	uint32 StartOfData = *(uint32 *)(Image + 8);
+
+	uint8 *Data = Image + StartOfData;
+	
+	int32 StartX = 0;
+	int32 StartY = 0;
+
+
+	if(OffsetX < 0)
+	{
+		StartX -= RoundFloat32ToInt32(OffsetX);
+		Width -= StartX;
+		OffsetX = 0;
+	}
+
+	if(OffsetY < 0)
+	{
+		StartY -= RoundFloat32ToInt32(OffsetY);
+		Height -= StartY;
+		OffsetY = 0;
+	}
+
+	if(OffsetX + Width >= WINDOW_WIDTH)
+	{
+		Width -= (RoundFloat32ToInt32(OffsetX) + Width) - WINDOW_WIDTH;
+		if(Width < 0)
+		{
+			Width = 0;
+		}
+
+	}
+
+	if(OffsetY + Height >= WINDOW_HEIGHT)
+	{
+		Height -= (RoundFloat32ToInt32(OffsetY) + Height) - WINDOW_HEIGHT;
+		if(Height < 0)
+		{
+			Height = 0;
+		}
+
+	}
+
+	int32 XOffsetInt = RoundFloat32ToInt32(OffsetX);
+	int32 YOffsetInt = RoundFloat32ToInt32(OffsetY);
+
+	uint32 *Row = (uint32 *)Buffer->StartOfBuffer;
+
+	Row += XOffsetInt;
+	Row += (Buffer->Pitch / 4) * (WINDOW_HEIGHT - 1 - YOffsetInt);
+
+
+	uint8 *ImageData = Data + StartX + StartY * Width;
+
+	for (int32 Y = 0; Y < Height; ++Y)
+	{
+		uint32 *Pixel = Row;
+		uint8 *Source = ImageData;
+		for(int32 X = 0; X < Width; ++X)
+		{
+			uint8 Blue = 0xFF - *Source;
+			uint8 Green = 0xFF - *Source;
+			uint8 Red = 0xFF - *Source;
+
+			*Pixel++ = 
+			(
+				(0xFF << 24) |
+				(Red << 16) |
+				(Green << 8) |
+				(Blue << 0)
+			);
+
+			Source++;
+		}
+		Row -= Buffer->Pitch/4;
+		ImageData += Width;
+	}
+
+}
+#endif
 
 internal void DrawImageOnTop
 (
@@ -721,17 +868,21 @@ internal void JoinBuffersFirstPass(render_layers *RenderLayers)
 			float32 Green = *PixelColour++;
 			float32 Red = *PixelColour;
 
+
+			int32 ResultBlue = 1;
+			int32 ResultGreen = 1;
+			int32 ResultRed = 1;
+						
 			uint8 MaskValue = *(uint8 *)FGPixel;
-
 			if(MaskValue > 0xFF / 2)
-			{ MaskValue = 0xFF; } else
-			{ MaskValue = 0; }
+			{ 
+				ResultBlue = RoundFloat32ToInt32(Blue);
+				ResultGreen = RoundFloat32ToInt32(Green);
+				ResultRed = RoundFloat32ToInt32(Red);
+			}
 
-			float32 Ratio = ((float32)MaskValue) / ((float32)0xFF);
+			// float32 Ratio = ((float32)MaskValue) / ((float32)0xFF);
 
-			int32 ResultBlue = RoundFloat32ToInt32(Blue * Ratio);
-			int32 ResultGreen = RoundFloat32ToInt32(Green * Ratio);
-			int32 ResultRed = RoundFloat32ToInt32(Red * Ratio);
 			
 			*FGPixel++ = 
 			(
@@ -784,7 +935,7 @@ internal void JoinBuffersSecondPass(render_layers *RenderLayers)
 				(ResultBlue << 0)
 			);
 
-			if(MaskValue)
+			if(MaskValue != 1)
 			{
 				*BGPixel = NewColourValue;
 			}

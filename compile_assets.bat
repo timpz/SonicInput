@@ -9,6 +9,8 @@ if exist _source\formatted_data (
     rd _source\formatted_data /s /q
 )
 
+_tools\DataFormatter.exe _tools\DataFormatter.exe -i %datadir%\timpz_logo.bmp -d %outputdir% -c 1
+
 _tools\DataFormatter.exe _tools\DataFormatter.exe -i %datadir%\A_Button.bmp -d %outputdir% -c 1
 _tools\DataFormatter.exe _tools\DataFormatter.exe -i %datadir%\B_Button.bmp -d %outputdir% -c 1
 _tools\DataFormatter.exe _tools\DataFormatter.exe -i %datadir%\C_Button.bmp -d %outputdir% -c 1
@@ -19,6 +21,7 @@ _tools\DataFormatter.exe _tools\DataFormatter.exe -i %datadir%\C_Press.bmp -d %o
 _tools\DataFormatter.exe _tools\DataFormatter.exe -i %datadir%\S_Press.bmp -d %outputdir% -c 1
 
 _tools\DataFormatter.exe _tools\DataFormatter.exe -i %datadir%\Dpad.bmp -v Dpad_Image -d %outputdir% -c 1
+_tools\DataFormatter.exe _tools\DataFormatter.exe -i %datadir%\DpadInner.bmp -v DpadInner_Image -d %outputdir% -c 1
 
 _tools\DataFormatter.exe _tools\DataFormatter.exe -i %datadir%\Direction_1.bmp -d %outputdir% -c 1
 _tools\DataFormatter.exe _tools\DataFormatter.exe -i %datadir%\Direction_2.bmp -d %outputdir% -c 1
