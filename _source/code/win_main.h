@@ -1,6 +1,7 @@
 #ifndef WIN32_MAIN_H
 
 #include <windows.h>
+// #include <windowsx.h>
 #include <iostream>
 
 #define DIRECTINPUT_VERSION 0x0800

@@ -1,4 +1,4 @@
-#include "win32_main.h"
+#include "win_main.h"
 #include "app.h"
 #include "settings.h"
 
@@ -11,6 +11,8 @@ global bool32 GlobalRunning;
 global win32_offscreen_buffer *Win32GlobalBackBuffer;
 global input DeviceInputs[2];
 global GUID GlobalControllerGUID;
+global int32 WindowOffsetX;
+global int32 WindowOffsetY;
 
 internal void Win32ResizeDIB
 (
@@ -62,10 +64,17 @@ internal void Win32DisplayBufferInWindow
 
 inline void Win32ProcessKeyboardMessage(app_button_state *NewState, bool32 IsDown)
 {
-		NewState->IsDown = IsDown;
+	NewState->IsDown = IsDown;
 }
 
-internal void Win32ProcessPendingMessages(game_input *Keyboard)
+inline void Win32ProcessMouseMessage(app_mouse_state *NewState, bool32 IsDown, int32 X, int32 Y)
+{
+	NewState->IsDown = IsDown;
+	NewState->StartX = X;
+	NewState->StartY = Y;
+}
+
+internal void Win32ProcessPendingMessages(HWND Window, game_input *KeyboardInput, system_input *SystemInput)
 {
 	MSG Message;
 	while(PeekMessage(&Message, 0, 0, 0, PM_REMOVE))
@@ -89,47 +98,47 @@ internal void Win32ProcessPendingMessages(game_input *Keyboard)
 				{
 					if(VKCode == 'W')
 					{
-						Win32ProcessKeyboardMessage(&Keyboard->MoveUp, IsDown);
+						Win32ProcessKeyboardMessage(&KeyboardInput->MoveUp, IsDown);
 					}
 
 					if(VKCode == 'A')
 					{
-						Win32ProcessKeyboardMessage(&Keyboard->MoveLeft, IsDown);
+						Win32ProcessKeyboardMessage(&KeyboardInput->MoveLeft, IsDown);
 					}
 
 					if(VKCode == 'S')
 					{
-						Win32ProcessKeyboardMessage(&Keyboard->MoveDown, IsDown);
+						Win32ProcessKeyboardMessage(&KeyboardInput->MoveDown, IsDown);
 					}
 
 					if(VKCode == 'D')
 					{
-						Win32ProcessKeyboardMessage(&Keyboard->MoveRight, IsDown);
+						Win32ProcessKeyboardMessage(&KeyboardInput->MoveRight, IsDown);
 					}
 
 					if(VKCode == 'J')
 					{
-						Win32ProcessKeyboardMessage(&Keyboard->ActionA, IsDown);
+						Win32ProcessKeyboardMessage(&KeyboardInput->ActionA, IsDown);
 					}
 
 					if(VKCode == 'K')
 					{
-						Win32ProcessKeyboardMessage(&Keyboard->ActionB, IsDown);
+						Win32ProcessKeyboardMessage(&KeyboardInput->ActionB, IsDown);
 					}
 
 					if(VKCode == 'L')
 					{
-						Win32ProcessKeyboardMessage(&Keyboard->ActionC, IsDown);
+						Win32ProcessKeyboardMessage(&KeyboardInput->ActionC, IsDown);
 					}
 
 					if(VKCode == VK_RETURN)
 					{
-						Win32ProcessKeyboardMessage(&Keyboard->Enter, IsDown);
+						Win32ProcessKeyboardMessage(&KeyboardInput->Enter, IsDown);
 					}
 
 					if(VKCode == VK_ESCAPE)
 					{
-						Win32ProcessKeyboardMessage(&Keyboard->ExitApp, IsDown);
+						Win32ProcessKeyboardMessage(&SystemInput->ExitApp, IsDown);
 					}
 
 					bool32 AltKeyWasDown = Message.lParam & (1 << 29);
@@ -137,6 +146,27 @@ internal void Win32ProcessPendingMessages(game_input *Keyboard)
 					{
 						GlobalRunning = false;
 					}
+
+				}
+			} break;
+
+			case WM_LBUTTONDOWN:
+			case WM_LBUTTONUP:
+			{
+				uint32 VMCode = (uint32)Message.wParam;
+				bool32 IsDown = (VMCode & 1) == 1;
+				bool32 WasDown = (VMCode & 1) == 0;
+
+				if(IsDown != WasDown)
+				{
+
+					POINT CursorMonitorPosition = {};
+					GetCursorPos(&CursorMonitorPosition);
+
+					Win32ProcessMouseMessage
+					(
+						&SystemInput->LeftMouse, IsDown, CursorMonitorPosition.x, CursorMonitorPosition.y
+					);
 				}
 			} break;
 
@@ -184,13 +214,21 @@ internal LRESULT CALLBACK Win32MainWindowCallback
 			GlobalRunning = false;
 		} break;
 
-		// case WM_ACTIVATEAPP:
-		// {
+		case WM_ACTIVATEAPP:
+		{
 			// Unfocusing the app could make the HeldDownCount behave badly. 
 			// For this reason we always clear inputs to 0 when coming back into focus
+
+			if(WParam == 0)
+			{
+				DeviceInputs[0].SystemInput = {};
+				DeviceInputs[1].SystemInput = {};
+			}
+
+
 			// DeviceInputs[0].DInputController = {};
 			// DeviceInputs[1].DInputController = {};
-		// } break;
+		} break;
 
 		case WM_PAINT:
 		{
@@ -280,8 +318,47 @@ internal void ProcessDInput(LPDIRECTINPUTDEVICE8 DInputDevice, game_input *DInpu
 	}
 }
 
+internal void WindowHandling(HWND Window, system_input *Input)
+{
+	if(Input->ExitApp.IsDown){ GlobalRunning = false; }
+
+	if(Input->LeftMouse.IsDown)
+	{
+		RECT Rectangle = {};
+		GetWindowRect(Window, &Rectangle);
+
+		int32 Width = Rectangle.right - Rectangle.left;
+		int32 Height = Rectangle.bottom - Rectangle.top;
+
+		POINT CursorMonitorPosition = {};
+		GetCursorPos(&CursorMonitorPosition);
+
+		// POINT CursorWindowPosition = CursorMonitorPosition;
+		// ScreenToClient(Window, &CursorWindowPosition);
+
+		int32 DeltaX = CursorMonitorPosition.x - Input->LeftMouse.StartX;
+		int32 DeltaY = CursorMonitorPosition.y - Input->LeftMouse.StartY;
+
+		Input->LeftMouse.StartX = CursorMonitorPosition.x;
+		Input->LeftMouse.StartY = CursorMonitorPosition.y;
+
+		MoveWindow(Window, Rectangle.left + DeltaX, Rectangle.top + DeltaY, Width, Height, false);
+		// MoveWindow(Window, Rectangle.left + DeltaX/2, Rectangle.top + DeltaY/2, Width, Height, false);
+
+		// Input->LeftMouse.DeltaX = Rectangle.left - Input->LeftMouse.StartX;
+	}
+}
+
 internal void ProcessInput(input *NewInput, input *OldInput)
 {
+	if(OldInput->SystemInput.LeftMouse.IsDown)
+	{
+		NewInput->SystemInput.LeftMouse.HeldDownCount = ++OldInput->SystemInput.LeftMouse.HeldDownCount;
+	} else
+	{
+		NewInput->SystemInput.LeftMouse.HeldDownCount = 0;
+	}
+
 	if(NewInput->SelectedDevice == 0)
 	{
 
@@ -354,9 +431,11 @@ int32 CALLBACK WinMain
 		bool32 WindowMenu = false; // Window has no menu
 
 		AdjustWindowRectEx(&WindowRect, WindowStyle, WindowMenu, WindowStyleEx);
+		// WindowOffsetX = 
 
 		uint32 WindowWidth = WindowRect.right - WindowRect.left;
 		uint32 WindowHeight = WindowRect.bottom - WindowRect.top;
+
 
 		HWND Window = CreateWindowExA
 		(
@@ -480,10 +559,11 @@ int32 CALLBACK WinMain
 
 			while(GlobalRunning)
 			{
-				Win32ProcessPendingMessages(&NewInput->KeyboardController);
+				Win32ProcessPendingMessages(Window, &NewInput->KeyboardController, &NewInput->SystemInput);
 				ProcessDInput(DInputDevice, &NewInput->DInputController, &OldInput->DInputController);
 
 				ProcessInput(NewInput, OldInput);
+				WindowHandling(Window, &NewInput->SystemInput);
 
 				Update(DeviceInputs, &AppMemory);
 				Render(&RenderLayers, &AppMemory);

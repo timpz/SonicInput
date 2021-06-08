@@ -118,6 +118,21 @@ struct app_button_state
 	bool32 IsDown;
 };
 
+struct app_mouse_state
+{
+	int32 StartX;
+	int32 StartY;
+	int32 DeltaX;
+	int32 DeltaY;
+	int32 HeldDownCount;
+	bool32 IsDown;
+};
+
+struct system_input
+{
+	app_button_state ExitApp;
+	app_mouse_state LeftMouse;
+};
 
 struct game_input
 {
@@ -126,7 +141,7 @@ struct game_input
 		app_button_state Buttons[9];
 		struct
 		{
-			app_button_state ExitApp;
+			// app_button_state ExitApp;
 
 			app_button_state Enter;
 			app_button_state MoveUp;
@@ -140,12 +155,12 @@ struct game_input
 			
 		};
 	};
-	
 };
 
 struct input
 {
 	int32 SelectedDevice;
+	system_input SystemInput;
 	union
 	{
 		game_input Device[3];
