@@ -10,7 +10,7 @@
 
 #define APP_NAME "SonicInput"
 
-#define INPUT_DEVICE 0
+#define INPUT_DEVICE 1
 
 #define TRANSPARENT_COLOUR 0x00010101
 // #define TRANSPARENT_COLOUR 0x00000000

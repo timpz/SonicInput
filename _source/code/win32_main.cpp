@@ -241,15 +241,13 @@ internal BOOL DirectInputEnumCallback(LPCDIDEVICEINSTANCE DirectInputPointer, LP
 	return true;
 }
 
-internal void ProcessDInput(LPDIRECTINPUTDEVICE8 DInputDevice, game_input *DInputController)
+internal void ProcessDInput(LPDIRECTINPUTDEVICE8 DInputDevice, game_input *DInputController, game_input *DI_old)
 {
 	DIJOYSTATE DIState = {};
 
 	if(DInputDevice != 0)
 	{
 		DInputDevice->GetDeviceState(sizeof(DIJOYSTATE), (LPVOID)&DIState);
-		game_input ZeroDIController = {};
-
 		*DInputController = {};
 
 		uint32 DIPOV = DIState.rgdwPOV[0]/4500;
@@ -279,6 +277,40 @@ internal void ProcessDInput(LPDIRECTINPUTDEVICE8 DInputDevice, game_input *DInpu
 		DInputController->ActionC.IsDown = (bool32)DIState.rgbButtons[2];
 
 		DInputController->Enter.IsDown = (bool32)DIState.rgbButtons[5];
+	}
+}
+
+internal void ProcessInput(input *NewInput, input *OldInput)
+{
+	if(NewInput->SelectedDevice == 0)
+	{
+
+		for(int32 ButtonIndex = 0; ButtonIndex < ArrayCount(NewInput->KeyboardController.Buttons); ButtonIndex++)
+		{
+			if(OldInput->KeyboardController.Buttons[ButtonIndex].IsDown)
+			{
+				NewInput->KeyboardController.Buttons[ButtonIndex].IsDown = true;
+				NewInput->KeyboardController.Buttons[ButtonIndex].HeldDownCount = 
+					++OldInput->KeyboardController.Buttons[ButtonIndex].HeldDownCount;
+			} else
+			{
+				NewInput->KeyboardController.Buttons[ButtonIndex].HeldDownCount = 0;
+			}
+		}
+	} else
+	{
+		for(int32 ButtonIndex = 0; ButtonIndex < ArrayCount(NewInput->DInputController.Buttons); ButtonIndex++)
+		{
+			if(OldInput->DInputController.Buttons[ButtonIndex].IsDown)
+			{
+				// NewInput->DInputController.Buttons[ButtonIndex].IsDown = true;
+				NewInput->DInputController.Buttons[ButtonIndex].HeldDownCount = 
+					++OldInput->DInputController.Buttons[ButtonIndex].HeldDownCount;
+			} else
+			{
+				NewInput->DInputController.Buttons[ButtonIndex].HeldDownCount = 0;
+			}
+		}
 	}
 }
 
@@ -395,8 +427,8 @@ int32 CALLBACK WinMain
 			DeviceInputs[0].SelectedDevice = INPUT_DEVICE;
 			DeviceInputs[1].SelectedDevice = INPUT_DEVICE;
 
-			game_input *KeyboardController = &NewInput->KeyboardController;
-			game_input *DInputController = &NewInput->DInputController;
+			// game_input *KeyboardController = &NewInput->KeyboardController;
+			// game_input *DInputController = &NewInput->DInputController;
 
 			LPDIRECTINPUT8 DInputPointer = 0;
 			LPDIRECTINPUTDEVICE8 DInputDevice = 0;
@@ -448,8 +480,10 @@ int32 CALLBACK WinMain
 
 			while(GlobalRunning)
 			{
-				Win32ProcessPendingMessages(KeyboardController);
-				ProcessDInput(DInputDevice, DInputController);
+				Win32ProcessPendingMessages(&NewInput->KeyboardController);
+				ProcessDInput(DInputDevice, &NewInput->DInputController, &OldInput->DInputController);
+
+				ProcessInput(NewInput, OldInput);
 
 				Update(DeviceInputs, &AppMemory);
 				Render(&RenderLayers, &AppMemory);
@@ -460,21 +494,8 @@ int32 CALLBACK WinMain
 					WINDOW_WIDTH, WINDOW_HEIGHT
 				);
 
-				for(int32 ButtonIndex = 0; ButtonIndex < ArrayCount(NewInput->KeyboardController.Buttons); ButtonIndex++)
-				{
-					if(OldInput->KeyboardController.Buttons[ButtonIndex].IsDown)
-					{
-						NewInput->KeyboardController.Buttons[ButtonIndex].IsDown = true;
-						NewInput->KeyboardController.Buttons[ButtonIndex].HeldDownCount = 
-							++OldInput->KeyboardController.Buttons[ButtonIndex].HeldDownCount;
-					} else
-					{
-						NewInput->KeyboardController.Buttons[ButtonIndex].HeldDownCount = 0;
-					}
-				}
-
 				input *TempDeviceInput = NewInput;
-				OldInput = NewInput;
+				NewInput = OldInput;
 				OldInput = TempDeviceInput;
 
 				// Enforce Framerate
